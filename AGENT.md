@@ -91,6 +91,11 @@ In JavaScript and TypeScript, pipelines can be implemented in a few practical wa
 - use small custom composition helpers when the repo does not already depend on a pipeline utility
 - use utilities such as `lodash/flow` when the target repository already uses Lodash
 
+The JavaScript pipeline operator `|>` is not part of the language standard yet, so do not assume native runtime support. If a target repository explicitly opts into the proposal, prefer using the existing Babel implementation instead of inventing custom syntax rules:
+
+- Babel plugin docs: https://babeljs.io/docs/babel-plugin-proposal-pipeline-operator
+- TC39 proposal: https://github.com/tc39/proposal-pipeline-operator
+
 ```ts
 const normalizeName = (value: string) => value.trim().toLowerCase();
 const prefixUser = (value: string) => `user:${value}`;
