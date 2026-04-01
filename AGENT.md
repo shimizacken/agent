@@ -11,11 +11,12 @@
 7. [Folder Structure](#folder-structure)
 8. [Code Style](#code-style)
 9. [Code Conventions](#code-conventions)
-10. [Testing](#testing)
-11. [Git And Planning](#git-and-planning)
-12. [Template For Repo-Specific Sections](#template-for-repo-specific-sections)
-13. [Minimal Repo-Specific Skeleton](#minimal-repo-specific-skeleton)
-14. [Relationship To Copilot Instructions](#relationship-to-copilot-instructions)
+10. [Accessibility](#accessibility)
+11. [Testing](#testing)
+12. [Git And Planning](#git-and-planning)
+13. [Template For Repo-Specific Sections](#template-for-repo-specific-sections)
+14. [Minimal Repo-Specific Skeleton](#minimal-repo-specific-skeleton)
+15. [Relationship To Copilot Instructions](#relationship-to-copilot-instructions)
 
 ## Purpose
 
@@ -81,7 +82,40 @@ Use functional programming as the default paradigm unless the target repository 
 - prefer explicit data flow over hidden mutable state
 - keep impure code at boundaries
 - pass dependencies as arguments instead of reaching into globals when practical
+- use pipeline design patterns where possible
 - prefer transformation pipelines and derived values over stateful orchestration when both are equally clear
+
+In JavaScript and TypeScript, pipelines can be implemented in a few practical ways:
+
+- use native array methods like `map`, `filter`, and `reduce` when the flow is simple
+- use small custom composition helpers when the repo does not already depend on a pipeline utility
+- use utilities such as `lodash/flow` when the target repository already uses Lodash
+
+```ts
+const normalizeName = (value: string) => value.trim().toLowerCase();
+const prefixUser = (value: string) => `user:${value}`;
+
+const userId = prefixUser(normalizeName('  Alice '));
+```
+
+```ts
+const pipe =
+  <T>(...fns: Array<(value: T) => T>) =>
+  (value: T) =>
+    fns.reduce((currentValue, fn) => fn(currentValue), value);
+
+const normalizeName = (value: string) => value.trim();
+const toLowerCase = (value: string) => value.toLowerCase();
+const prefixUser = (value: string) => `user:${value}`;
+
+const buildUserId = pipe(normalizeName, toLowerCase, prefixUser);
+```
+
+```ts
+import flow from 'lodash/flow';
+
+const buildUserId = flow([normalizeName, toLowerCase, prefixUser]);
+```
 
 ## Reusable Baseline
 
@@ -199,6 +233,9 @@ Use compact, enforceable conventions. If a target repo already has stronger loca
 | Unit test | mirror target file | `*.test.ts` / `*.test.tsx` | `entities.utils.test.ts` |
 | E2E test | camelCase | `*.cy.ts` / `*.cy.tsx` | `dashboard.cy.ts` |
 
+- unit test files should live next to the file they test
+- for example, `entities.utils.ts` and `entities.utils.test.ts` should sit side by side
+
 #### Styles And Assets
 
 | Type | Filename / Folder | Suffix | Example |
@@ -297,6 +334,25 @@ export const MuteButton: React.FC<{
 | `pages` | route-level composition | compose containers and views into screens |
 
 Use the split above when it helps clarity. If a target repo already uses a simpler structure, follow the repo instead of forcing extra layers.
+
+- story files should live next to the view they describe
+- for example, `Button.view.tsx` and `Button.stories.tsx` should sit side by side
+
+## Accessibility
+
+Accessibility should be treated as a default quality requirement, not a later enhancement.
+
+- prefer semantic HTML before ARIA workarounds
+- use buttons for actions and links for navigation
+- ensure interactive elements are keyboard accessible
+- ensure focus states are visible and not removed without replacement
+- use accessible names for buttons, inputs, links, and other controls
+- associate labels with form fields
+- provide alt text for meaningful images and empty alt text for decorative images
+- do not rely on color alone to communicate meaning
+- ensure error states and validation messages are available to assistive technologies
+- prefer headings in a logical hierarchy
+- test critical flows with keyboard navigation
 
 ## Testing
 
