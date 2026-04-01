@@ -215,8 +215,31 @@ Use compact, enforceable conventions. If a target repo already has stronger loca
 - utilities should be generic and reusable
 - utilities should be pure functions
 - utilities should be small, focused, and easy to test
+- use currying when it improves composition and reuse
 - pass dependencies and required values as arguments
 - avoid coupling utilities to framework runtime or app state when possible
+
+```ts
+type User = {
+  role: string;
+};
+
+export const hasRole =
+  (requiredRole: string) =>
+  (user: User) =>
+    user.role === requiredRole;
+
+const isAdmin = hasRole('admin');
+```
+
+```ts
+export const mapWith =
+  <TInput, TOutput>(mapper: (value: TInput) => TOutput) =>
+  (values: TInput[]) =>
+    values.map(mapper);
+
+const getNames = mapWith((user: { name: string }) => user.name);
+```
 
 #### Types
 
@@ -240,8 +263,15 @@ Use compact, enforceable conventions. If a target repo already has stronger loca
 - prefer functional components only
 - do not introduce class components
 - keep components explicit and easy to follow
+- prefer inline props for components unless the props type is reused or large enough to hurt readability
 - prefer named exports
 - keep hooks, rendering logic, and side effects separated when possible
+
+```tsx
+export const UserCard = ({ name, isActive }: { name: string; isActive: boolean }) => {
+  return <div>{isActive ? name : 'Inactive'}</div>;
+};
+```
 
 #### Component Types
 
