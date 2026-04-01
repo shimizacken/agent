@@ -2,9 +2,7 @@
 
 ## Purpose
 
-This repository exists to produce reusable instruction files for AI coding assistants, especially `AGENT.md` and `.github/copilot-instructions.md`.
-
-Use this file as the deeper operating guide. It is intentionally broader than the Copilot instructions file and is allowed to capture workflow, architecture, and editing conventions in more detail.
+Use this file as the deeper operating guide for a repository. It is intentionally broader than the Copilot instructions file and is allowed to capture workflow, architecture, and editing conventions in more detail.
 
 When adapting this file into another repository:
 

@@ -29,6 +29,25 @@ The main patterns worth preserving were:
 - [`AGENT.md`](/home/shimshon.zacken/Documents/projects/agent/AGENT.md): reusable long-form instructions for coding agents
 - [`.github/copilot-instructions.md`](/home/shimshon.zacken/Documents/projects/agent/.github/copilot-instructions.md): concise always-on Copilot guidance
 
+## How To Use These Files
+
+Copy these files into a real repository as starting points, then adapt them to that repository.
+
+For [`AGENT.md`](/home/shimshon.zacken/Documents/projects/agent/AGENT.md):
+
+- rewrite the `Purpose` section first so it describes the actual product and current codebase reality
+- add the real package manager, core commands, stack, and directory structure
+- add only constraints that are enforceable in that repository
+- document real pitfalls and legacy traps instead of generic warnings
+- remove sections that do not help an agent produce better changes there
+
+For [`.github/copilot-instructions.md`](/home/shimshon.zacken/Documents/projects/agent/.github/copilot-instructions.md):
+
+- keep it short and stricter than `AGENT.md`
+- keep only the rules that should apply in almost every Copilot response
+- move longer explanations and deeper workflow guidance into `AGENT.md`
+- make it read like native instructions for the target project, not like template-repo metadata
+
 ## Working Principles
 
 - prefer portable rules over stack-specific noise
