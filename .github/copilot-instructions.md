@@ -18,12 +18,32 @@ Use this file as the short, always-on instruction layer for a repository. It sho
 ## Default Engineering Rules
 
 - preserve existing naming, folder, and architectural conventions
+- use FP as the default paradigm unless the repo clearly requires otherwise
 - prefer precise types over `any`
 - make nullable or optional behavior explicit
 - centralize shared constants instead of repeating magic strings
 - keep side effects near boundaries and keep helpers pure when practical
 - add or update tests when behavior changes materially
 - prefer deterministic tests over environment-dependent tests
+
+## Code Conventions
+
+- prefer `camelCase` for vanilla JS/TS modules such as utils, types, APIs, and services
+- prefer `PascalCase` for React pages, containers, views, and stories
+- prefer functional components only
+- use `*.page.tsx` for route-level composition
+- use `*.container.tsx` for stateful orchestration
+- use `*.view.tsx` for presentational components
+- use `*.utils.ts` for reusable stateless helpers
+- use `*.types.ts` for shared types
+- use `*.service.ts` only when a real service abstraction is needed
+
+## Testing
+
+- add or update tests when behavior changes materially
+- prefer deterministic unit tests for logic-heavy code
+- prefer end-to-end tests for user flows and integration boundaries
+- avoid brittle tests that assert implementation details
 
 ## Avoid
 
@@ -32,6 +52,7 @@ Use this file as the short, always-on instruction layer for a repository. It sho
 - duplicating business rules in multiple places
 - replacing established local patterns with personal preference
 - generating placeholder architecture that the repo does not already use
+- introducing classes or OOP-heavy patterns when a functional approach is sufficient
 
 ## Expected Repo Customization
 

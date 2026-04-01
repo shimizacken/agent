@@ -1,5 +1,22 @@
 # AGENT.md
 
+## Table Of Contents
+
+1. [Purpose](#purpose)
+2. [Documentation Split](#documentation-split)
+3. [Instruction Design Principles](#instruction-design-principles)
+4. [What High-Value Instructions Usually Cover](#what-high-value-instructions-usually-cover)
+5. [Default Paradigm](#default-paradigm)
+6. [Reusable Baseline](#reusable-baseline)
+7. [Folder Structure](#folder-structure)
+8. [Code Style](#code-style)
+9. [Code Conventions](#code-conventions)
+10. [Testing](#testing)
+11. [Git And Planning](#git-and-planning)
+12. [Template For Repo-Specific Sections](#template-for-repo-specific-sections)
+13. [Minimal Repo-Specific Skeleton](#minimal-repo-specific-skeleton)
+14. [Relationship To Copilot Instructions](#relationship-to-copilot-instructions)
+
 ## Purpose
 
 Use this file as the deeper operating guide for a repository. It is intentionally broader than the Copilot instructions file and is allowed to capture workflow, architecture, and editing conventions in more detail.
@@ -56,6 +73,16 @@ Use this as a checklist when creating a repo-specific variant:
 - known pitfalls or legacy traps
 - practical editing guidance for incremental change
 
+## Default Paradigm
+
+Use functional programming as the default paradigm unless the target repository clearly requires something else.
+
+- prefer small, composable functions
+- prefer explicit data flow over hidden mutable state
+- keep impure code at boundaries
+- pass dependencies as arguments instead of reaching into globals when practical
+- prefer transformation pipelines and derived values over stateful orchestration when both are equally clear
+
 ## Reusable Baseline
 
 Unless the target repository says otherwise, these defaults are reasonable:
@@ -74,6 +101,7 @@ Unless the target repository says otherwise, these defaults are reasonable:
 - prefer pure helpers where practical
 - separate orchestration code from presentational code when the codebase already follows that split
 - prefer incremental modernization over pattern churn
+- use FP as the default style for application and utility code
 
 ### Types And APIs
 
@@ -88,7 +116,157 @@ Unless the target repository says otherwise, these defaults are reasonable:
 - prefer deterministic tests with mocked boundaries
 - avoid adding brittle tests that only mirror implementation details
 
-### Git And Planning
+## Folder Structure
+
+Prefer a flat folder structure with explicit folders when the target repository does not already enforce a different architecture.
+
+Typical top-level source folders:
+
+- `api`
+- `utils`
+- `services`
+- `containers`
+- `pages`
+- `components`
+- `constants`
+- `hooks`
+- `hoc`
+- `assets`
+- `network`
+- `style`
+
+The goal is discoverability: each folder should communicate responsibility clearly without creating deep, ambiguous nesting.
+
+## Code Style
+
+Prefer a code style that optimizes for readability over terseness.
+
+- keep a blank line before and after control-flow statements when it improves readability
+- keep a blank line before `return` when it closes a logical block
+- use braces for `if`, `else`, loops, and similar control-flow statements
+- prefer early returns over deeply nested branching
+- prefer explicit names over abbreviated names
+- keep functions focused and short when practical
+- prefer named exports when the target repository allows them
+- avoid clever one-liners that reduce readability
+
+### Import Order
+
+Organize imports in logical groups, from more external to more local:
+
+1. third-party packages
+2. vanilla logic and state management
+3. hooks
+4. pages
+5. containers
+6. views
+7. assets
+8. styles
+
+Keep each group together and separate groups with a blank line when the file has enough imports for grouping to improve readability.
+
+## Code Conventions
+
+Use compact, enforceable conventions. If a target repo already has stronger local conventions, prefer the repo.
+
+### Naming Conventions
+
+#### Vanilla Modules
+
+| Type | Filename / Folder | Suffix | Example |
+| --- | --- | --- | --- |
+| Vanilla TS/JS module | camelCase | `*.ts` / `*.js` | `sessionValidator.ts` |
+| Util | camelCase | `*.utils.ts` | `entities.utils.ts` |
+| API module | camelCase | `*.api.ts` | `entities.api.ts` |
+| Service | camelCase | `*.service.ts` | `billing.service.ts` |
+| Types | camelCase | `*.types.ts` | `user.types.ts` |
+
+#### React Files And Folders
+
+| Type | Filename / Folder | Suffix | Example |
+| --- | --- | --- | --- |
+| Page | PascalCase | `*.page.tsx` | `Dashboard.page.tsx` |
+| Container | PascalCase | `*.container.tsx` | `UserList.container.tsx` |
+| View component | PascalCase | `*.view.tsx` | `UserList.view.tsx` |
+| Story | PascalCase | `*.stories.tsx` | `Button.stories.tsx` |
+| Component folder | PascalCase | - | `UserCard` |
+
+#### Tests
+
+| Type | Filename / Folder | Suffix | Example |
+| --- | --- | --- | --- |
+| Unit test | mirror target file | `*.test.ts` / `*.test.tsx` | `entities.utils.test.ts` |
+| E2E test | camelCase | `*.cy.ts` / `*.cy.tsx` | `dashboard.cy.ts` |
+
+#### Styles And Assets
+
+| Type | Filename / Folder | Suffix | Example |
+| --- | --- | --- | --- |
+| JSON | camelCase | `*.json` | `packageSettings.json` |
+| Component styles | PascalCase | `*.module.scss` / `*.css` | `Button.module.scss` |
+| Partial SCSS | underscore + camelCase | `*.scss` | `_variables.scss` |
+| Image | snake_case | `*.png` | `logo_icon.png` |
+| SVG | kebab-case | `*.svg` | `logo-icon.svg` |
+
+### Vanilla JS/TS
+
+#### Utils
+
+- utilities should be generic and reusable
+- utilities should be pure functions
+- utilities should be small, focused, and easy to test
+- pass dependencies and required values as arguments
+- avoid coupling utilities to framework runtime or app state when possible
+
+#### Types
+
+- use dedicated `*.types.ts` files for shared domain types when the types are reused
+- keep types close to the domain they describe
+- prefer explicit names over generic names like `Data` or `Item`
+- separate external API shapes from internal domain shapes when they differ
+
+#### Services
+
+- use `*.service.ts` only when a real stateful or boundary-oriented abstraction is needed
+- a service should expose a clear, intention-revealing API
+- inject external dependencies into services
+- keep business logic testable without real network, storage, or framework dependencies
+- do not create services for simple stateless helpers that belong in utils
+
+### React
+
+#### Functional Components
+
+- prefer functional components only
+- do not introduce class components
+- keep components explicit and easy to follow
+- prefer named exports
+- keep hooks, rendering logic, and side effects separated when possible
+
+#### Component Types
+
+| Type | Responsibility | Notes |
+| --- | --- | --- |
+| `components` | presentational UI | prefer `*.view.tsx` for pure display components |
+| `containers` | stateful orchestration and integration | connect hooks, services, stores, signals, or APIs |
+| `pages` | route-level composition | compose containers and views into screens |
+
+Use the split above when it helps clarity. If a target repo already uses a simpler structure, follow the repo instead of forcing extra layers.
+
+## Testing
+
+Testing should be treated as part of the change, not an afterthought.
+
+- add or update tests when logic or user-visible behavior changes
+- prefer unit tests for pure logic, hooks, utilities, and service behavior
+- prefer component tests or story coverage for reusable UI behavior when that exists in the target repo
+- prefer end-to-end tests for critical user flows, integration boundaries, and regression coverage
+- keep tests deterministic by mocking time, randomness, network, storage, and browser-only boundaries when needed
+- avoid brittle assertions tied to implementation details
+- prefer clear arrange-act-assert structure
+- if test coverage is intentionally skipped, say why
+
+## Git And Planning
 
 - inspect the existing worktree before editing
 - do not revert unrelated user changes
@@ -104,11 +282,13 @@ When porting this file into a real repository, customize these sections first:
 3. Basic Commands
 4. Stack
 5. Current Architecture
-6. Naming Conventions
-7. Hard Constraints
-8. Testing Guidance
-9. Known Pitfalls
-10. Practical Editing Guidance
+6. Folder Structure
+7. Code Style
+8. Naming Conventions
+9. Hard Constraints
+10. Testing Guidance
+11. Known Pitfalls
+12. Practical Editing Guidance
 
 ## Minimal Repo-Specific Skeleton
 
@@ -136,6 +316,14 @@ Which package manager to use and why.
 ## Stack
 
 Main frameworks, language, test tools, build tools.
+
+## Folder Structure
+
+Important directories and what belongs in them.
+
+## Code Style
+
+Formatting and readability rules that should be applied consistently.
 
 ## Project Structure
 
