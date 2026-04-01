@@ -143,6 +143,7 @@ Prefer a code style that optimizes for readability over terseness.
 
 - keep a blank line before and after control-flow statements when it improves readability
 - keep a blank line before `return` when it closes a logical block
+- avoid `return` where possible in simple expression-bodied functions
 - use braces for `if`, `else`, loops, and similar control-flow statements
 - prefer early returns over deeply nested branching
 - prefer explicit names over abbreviated names
@@ -268,9 +269,23 @@ const getNames = mapWith((user: { name: string }) => user.name);
 - keep hooks, rendering logic, and side effects separated when possible
 
 ```tsx
-export const UserCard = ({ name, isActive }: { name: string; isActive: boolean }) => {
-  return <div>{isActive ? name : 'Inactive'}</div>;
-};
+export const MuteButton: React.FC<{
+  isMuted: boolean;
+  className?: string;
+  onClick: () => void;
+}> = ({ isMuted, className, onClick }) => (
+  <button
+    type="button"
+    className={classNames(styles.muteButton, className)}
+    onClick={onClick}
+    aria-label={isMuted ? 'Unmute station' : 'Mute station'}
+  >
+    <span className={styles.muteButtonIcon} aria-hidden="true">
+      {isMuted ? 'no_sound' : 'volume_mute'}
+    </span>
+  </button>
+);
+
 ```
 
 #### Component Types
