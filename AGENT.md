@@ -131,6 +131,7 @@ Unless the target repository says otherwise, these defaults are reasonable:
 - prefer small, local changes over broad rewrites
 - preserve existing patterns before introducing new abstractions
 - do not rename or move files unless it materially improves the code or the task requires it
+- when renaming or moving files, preserve git history by using git-aware moves such as `git mv` when possible
 - avoid speculative refactors unrelated to the request
 - prefer explicit code over clever code
 
