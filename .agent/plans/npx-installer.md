@@ -2,8 +2,11 @@
 
 ## Goal
 
-Publish this repo as an npm package so that running `npx <package-name>` copies
+Make this repo runnable via `npx github:shimizacken/agent` so that it copies
 `.github/copilot-instructions.md` and `.github/skills/` into any target project.
+
+No npm publish needed - npx resolves the package directly from the private GitHub
+repo. Authentication uses the caller's existing GitHub SSH or token setup.
 
 ## Constraints
 
@@ -28,11 +31,11 @@ Create `package.json` with:
 
 ```json
 {
-  "name": "@your-scope/copilot-setup",
+  "name": "agent",
   "version": "1.0.0",
   "description": "Install GitHub Copilot instructions and skills into a project",
   "bin": {
-    "copilot-setup": "./bin/install.js"
+    "agent": "./bin/install.js"
   },
   "files": [
     "bin/",
@@ -46,7 +49,8 @@ Create `package.json` with:
 }
 ```
 
-Replace `@your-scope/copilot-setup` with the intended npm package name.
+The `name` field matches the GitHub repo name. npx resolves the bin entry
+automatically when the name matches.
 
 ### Verify
 
@@ -135,12 +139,13 @@ node --test bin/install.test.js
 
 Add a `## Installation` section near the top of `README.md` with:
 
-- The one-liner `npx <package-name>` command
+- The one-liner `npx github:shimizacken/agent` command
 - What it installs and where
+- A note that callers need GitHub access (SSH key or a `GH_TOKEN` env var)
 - A brief note on what gets copied (copilot-instructions.md + skills/)
 
 ### Verify
 
 ```
-node -e "const fs = require('fs'); const r = fs.readFileSync('README.md', 'utf8'); console.assert(r.includes('npx'), 'npx missing from README')"
+node -e "const fs = require('fs'); const r = fs.readFileSync('README.md', 'utf8'); console.assert(r.includes('npx github:shimizacken/agent'), 'npx command missing from README')"
 ```
