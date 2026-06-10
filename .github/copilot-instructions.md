@@ -47,7 +47,7 @@ Use this file as the short, always-on instruction layer for a repository. It sho
 
 ## Git
 
-- use conventional commits for all commit messages — see the `conventional-commits` skill for format and allowed types
+- use conventional commits for all commit messages - see the `conventional-commits` skill for format and allowed types
 
 ## Avoid
 

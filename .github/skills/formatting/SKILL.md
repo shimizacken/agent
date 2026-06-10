@@ -7,7 +7,7 @@ description: 'Code formatting rules for this project. Use when writing or review
 
 ## Rules
 
-- Always use curly braces for `if`, `while`, and `for` bodies — even single-line ones
+- Always use curly braces for `if`, `while`, and `for` bodies - even single-line ones
 - Add a blank line between consecutive `if` statements
 - Add a blank line between declaration blocks and the following statements or `return`
 - Add a blank line before a `return` statement when it is not the only line in a block
@@ -33,7 +33,7 @@ const y = transform(x);
 return y;
 ```
 
-**Bad** — consecutive `if` blocks with no spacing:
+**Bad** - consecutive `if` blocks with no spacing:
 ```ts
 if (a) { return 1; }
 if (b) { return 2; }

@@ -1,6 +1,6 @@
 ---
 name: incremental-planning
-description: 'Planning style for this project. Use when creating a migration plan, refactor plan, or any multi-step implementation plan. Each plan must be broken into small, independently buildable phases — one phase = one commit. Guides how to slice work so every step leaves the codebase in a working state.'
+description: 'Planning style for this project. Use when creating a migration plan, refactor plan, or any multi-step implementation plan. Each plan must be broken into small, independently buildable phases - one phase = one commit. Guides how to slice work so every step leaves the codebase in a working state.'
 ---
 
 # Incremental Planning
@@ -11,11 +11,11 @@ Plan files must be created at `.agent/plans/<plan-name>.md` in the workspace roo
 
 ## Rules
 
-- **One commit per phase** — each phase must be a single, focused git commit with a clear message.
-- **Build must pass before committing** — run `pnpm build` (and `pnpm test` if logic changed) before every commit.
-- **Each phase is independently deployable** — the extension must remain functional after every commit, not just at the end.
-- **No big-bang phases** — if a phase touches more than 2–3 files or changes both logic and UI, split it further.
-- **Verify step per phase** — every phase ends with an explicit verification command (build, test, or storybook check).
+- **One commit per phase** - each phase must be a single, focused git commit with a clear message.
+- **Build must pass before committing** - run `pnpm build` (and `pnpm test` if logic changed) before every commit.
+- **Each phase is independently deployable** - the extension must remain functional after every commit, not just at the end.
+- **No big-bang phases** - if a phase touches more than 2–3 files or changes both logic and UI, split it further.
+- **Verify step per phase** - every phase ends with an explicit verification command (build, test, or storybook check).
 
 ## Phase Sizing Guide
 
@@ -32,11 +32,11 @@ Plan files must be created at `.agent/plans/<plan-name>.md` in the workspace roo
 ## Naming Convention
 
 Commit messages follow conventional commits:
-- `chore:` — tooling, deps, config
-- `refactor:` — restructuring without behaviour change
-- `test:` — tests only
-- `feat:` — new component or feature
-- `fix:` — bug fix
+- `chore:` - tooling, deps, config
+- `refactor:` - restructuring without behaviour change
+- `test:` - tests only
+- `feat:` - new component or feature
+- `fix:` - bug fix
 
 ## Anti-patterns to Avoid
 

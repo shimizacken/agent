@@ -7,14 +7,14 @@ Publish this repo as an npm package so that running `npx <package-name>` copies
 
 ## Constraints
 
-- Zero runtime dependencies — use only Node.js built-ins (`fs`, `path`, `readline`)
-- The install script must be idempotent — re-running overwrites existing files
+- Zero runtime dependencies - use only Node.js built-ins (`fs`, `path`, `readline`)
+- The install script must be idempotent - re-running overwrites existing files
 - The package ships the actual `.github/` folder as its template source
-- No build step required — the script runs directly as plain Node.js
+- No build step required - the script runs directly as plain Node.js
 
 ---
 
-## Phase 1 — Init the npm package
+## Phase 1 - Init the npm package
 
 **Commit:** `chore: init npm package for npx installer`
 
@@ -56,7 +56,7 @@ node -e "const p = require('./package.json'); console.assert(p.bin, 'bin missing
 
 ---
 
-## Phase 2 — Add the install CLI script
+## Phase 2 - Add the install CLI script
 
 **Commit:** `feat: add npx install script`
 
@@ -87,7 +87,7 @@ ls .github/copilot-instructions.md .github/skills/
 
 ---
 
-## Phase 3 — Add a smoke test for the installer
+## Phase 3 - Add a smoke test for the installer
 
 **Commit:** `test: add smoke test for install script`
 
@@ -123,7 +123,7 @@ node --test bin/install.test.js
 
 ---
 
-## Phase 4 — Document npx usage in README
+## Phase 4 - Document npx usage in README
 
 **Commit:** `docs: add npx installation instructions to README`
 

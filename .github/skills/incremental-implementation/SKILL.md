@@ -8,7 +8,7 @@ argument-hint: '<plan-name> [phase number]  e.g. "06-integrated-llm-chat phase 3
 
 ## Purpose
 
-Implement exactly one phase from a plan file — no more, no fewer files than
+Implement exactly one phase from a plan file - no more, no fewer files than
 the plan specifies. Each invocation leaves the codebase in a working state and
 produces one clean commit.
 
@@ -20,24 +20,24 @@ produces one clean commit.
 - If no plan was given, list `agent/plans/` and ask the user which plan to work on.
 - If a phase number was given, jump to that phase.
 - If no phase was given, scan the plan for the first phase whose commit has not
-  yet been applied (`git log --oneline` or check the files listed — if none of
+  yet been applied (`git log --oneline` or check the files listed - if none of
   them exist yet, the phase is unimplemented).
 
 ### 2. Read the full phase block
 
 Read the target phase completely before touching any file. Note:
 
-- **Commit message** — copy it verbatim; do not paraphrase.
-- **Files touched** — the exact list of files to create or edit. Do not touch
+- **Commit message** - copy it verbatim; do not paraphrase.
+- **Files touched** - the exact list of files to create or edit. Do not touch
   any file outside this list.
-- **Verify command** — the exact shell command(s) to run at the end.
+- **Verify command** - the exact shell command(s) to run at the end.
 
 ### 3. Load relevant skills before writing code
 
 Before writing any code, load and follow:
 
-- `formatting` skill — brace style, blank lines, etc.
-- `functional-coding-style` skill — FP principles, SRP, pure vs side-effect
+- `formatting` skill - brace style, blank lines, etc.
+- `functional-coding-style` skill - FP principles, SRP, pure vs side-effect
   boundary.
 
 ### 4. Implement
@@ -54,11 +54,11 @@ Rules that apply to every file:
 
 - Follow existing naming, folder, and architectural conventions.
 - Preserve all code in files that is unrelated to this phase.
-- If the phase says "export X", export exactly X — do not add extra exports
+- If the phase says "export X", export exactly X - do not add extra exports
   speculatively.
 - Never set `nodeIntegration: true` in any Electron `BrowserWindow`.
 - Renderer code must never import from `src/main/` or use Node built-ins
-  directly — go through `contextBridge` / IPC only.
+  directly - go through `contextBridge` / IPC only.
 - Parsing and report-building helpers must stay free of Electron and DOM
   imports.
 
@@ -78,7 +78,7 @@ git add -A
 git commit -m "<exact commit message from the plan>"
 ```
 
-Use the commit message from the plan verbatim — do not reword it.
+Use the commit message from the plan verbatim - do not reword it.
 
 ### 7. Report
 
@@ -119,10 +119,10 @@ speculative fixes that go beyond the phase scope.
 ## Hard Constraints
 
 - **Never implement two phases in one run** unless explicitly asked.
-- **Never commit a failing build** — verify must pass first.
-- **Never add files, exports, or dependencies not listed in the phase** — that
+- **Never commit a failing build** - verify must pass first.
+- **Never add files, exports, or dependencies not listed in the phase** - that
   belongs to a future phase.
 - **Never delete code** as part of a phase unless the phase explicitly lists a
   deletion.
 - **Never modify `src/main/preload.ts` or `contextBridge`** to expose raw Node
-  or Electron APIs — only typed, minimal IPC wrappers.
+  or Electron APIs - only typed, minimal IPC wrappers.
