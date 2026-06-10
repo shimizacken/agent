@@ -45,6 +45,10 @@ Use this file as the short, always-on instruction layer for a repository. It sho
 - prefer end-to-end tests for user flows and integration boundaries
 - avoid brittle tests that assert implementation details
 
+## Git
+
+- use conventional commits for all commit messages — see the `conventional-commits` skill for format and allowed types
+
 ## Avoid
 
 - introducing large abstractions without clear need
