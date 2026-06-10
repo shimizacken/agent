@@ -152,6 +152,11 @@ const main = async () => {
     instructionsDest(agent, cwd),
   );
 
+  copyInstructions(
+    path.join(__dirname, "..", "AGENT.md"),
+    path.join(cwd, "AGENT.md"),
+  );
+
   const destSkillsBase = path.join(cwd, ".github", "skills");
 
   selectedSkills.forEach((skill) =>
@@ -159,7 +164,7 @@ const main = async () => {
   );
 
   console.log(
-    `\ndone - ${1 + selectedSkills.length} item(s) installed for ${agent}`,
+    `\ndone - ${2 + selectedSkills.length} item(s) installed for ${agent}`,
   );
 };
 

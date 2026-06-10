@@ -46,6 +46,12 @@ describe("install script", () => {
 
     assert.ok(fs.existsSync(target), `expected ${target} to exist`);
   });
+
+  it("copies AGENT.md to project root", () => {
+    const target = path.join(tmpDir, "AGENT.md");
+
+    assert.ok(fs.existsSync(target), `expected ${target} to exist`);
+  });
 });
 
 describe("install script - claude agent", () => {

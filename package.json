@@ -7,8 +7,10 @@
   },
   "files": [
     "bin/",
+    "AGENT.md",
     ".github/copilot-instructions.md",
-    ".github/skills/"
+    ".github/skills/",
+    ".github/agent-instructions/"
   ],
   "engines": {
     "node": ">=18"
