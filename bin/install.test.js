@@ -20,12 +20,14 @@ describe("install script", () => {
   it("exits with code 0", () => {
     const result = spawnSync("node", [path.resolve(__dirname, "install.js")], {
       cwd: tmpDir,
+      input: "\n\n", // accept default agent (copilot) and install all skills
+      encoding: "utf8",
     });
 
     assert.equal(result.status, 0);
   });
 
-  it("copies copilot-instructions.md", () => {
+  it("copies copilot-instructions.md for default agent", () => {
     const target = path.join(tmpDir, ".github", "copilot-instructions.md");
 
     assert.ok(fs.existsSync(target), `expected ${target} to exist`);
