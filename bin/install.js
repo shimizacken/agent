@@ -18,6 +18,18 @@ const parseAgentInput = (raw) => {
   return AGENTS.find((a) => a.startsWith(input)) ?? "copilot";
 };
 
+const instructionsSrc = (agent, srcGithub) => {
+  if (agent === "claude") {
+    return path.join(srcGithub, "agent-instructions", "claude.md");
+  }
+
+  if (agent === "codex") {
+    return path.join(srcGithub, "agent-instructions", "codex.md");
+  }
+
+  return path.join(srcGithub, "copilot-instructions.md");
+};
+
 const instructionsDest = (agent, cwd) => {
   if (agent === "claude") {
     return path.join(cwd, "CLAUDE.md");
@@ -125,7 +137,6 @@ const main = async () => {
   const prompter = createPrompter();
 
   const srcGithub = path.join(__dirname, "..", ".github");
-  const srcInstructions = path.join(srcGithub, "copilot-instructions.md");
   const srcSkillsBase = path.join(srcGithub, "skills");
   const cwd = process.cwd();
 
@@ -136,7 +147,10 @@ const main = async () => {
   prompter.close();
   console.log("");
 
-  copyInstructions(srcInstructions, instructionsDest(agent, cwd));
+  copyInstructions(
+    instructionsSrc(agent, srcGithub),
+    instructionsDest(agent, cwd),
+  );
 
   const destSkillsBase = path.join(cwd, ".github", "skills");
 
