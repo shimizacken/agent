@@ -9,8 +9,14 @@ The goal is simple: stop re-explaining the same engineering preferences, workflo
 Run this in the root of any project to copy the Copilot instructions and skills into it:
 
 ```sh
-npx github:shimizacken/agent
+# always the newest release (recommended)
+npx github:shimizacken/agent#latest
+
+# pinned to a specific release
+npx github:shimizacken/agent#v1.0.0
 ```
+
+> Plain `npx github:shimizacken/agent` (no tag) tracks `main` and may be unstable.
 
 This copies the following into `.github/` in the current directory:
 

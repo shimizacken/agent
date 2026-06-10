@@ -149,3 +149,47 @@ Add a `## Installation` section near the top of `README.md` with:
 ```
 node -e "const fs = require('fs'); const r = fs.readFileSync('README.md', 'utf8'); console.assert(r.includes('npx github:shimizacken/agent'), 'npx command missing from README')"
 ```
+
+---
+
+## Phase 5 - Add release workflow and update README for tagged installs
+
+**Commit:** `ci: add release workflow and document tagged installs`
+
+### Files touched
+
+- `.github/workflows/release.yml` (new)
+- `README.md`
+
+### What to do
+
+#### `.github/workflows/release.yml`
+
+Create a workflow triggered on `push` to `tags` matching `v*.*.*`. It must:
+
+1. Check out the repo with `fetch-depth: 0`
+2. Force-move the floating `latest` tag to the current commit
+3. Push the `latest` tag back to origin (using `GITHUB_TOKEN`)
+
+This lets callers use either `#latest` (always newest release) or `#v1.2.3` (pinned).
+
+#### `README.md`
+
+Replace the current single `npx github:shimizacken/agent` command with:
+
+```sh
+# always the newest release
+npx github:shimizacken/agent#latest
+
+# pinned to a specific release
+npx github:shimizacken/agent#v1.0.0
+```
+
+Add a note that plain `npx github:shimizacken/agent` (no tag) tracks `main` and may be unstable.
+
+### Verify
+
+```
+node -e "const fs = require('fs'); const r = fs.readFileSync('README.md', 'utf8'); console.assert(r.includes('#latest'), '#latest missing from README')"
+cat .github/workflows/release.yml
+```
