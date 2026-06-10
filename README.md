@@ -4,6 +4,21 @@
 
 The goal is simple: stop re-explaining the same engineering preferences, workflow rules, architecture expectations, and AI assistant constraints in every new project.
 
+## Installation
+
+Run this in the root of any project to copy the Copilot instructions and skills into it:
+
+```sh
+npx github:shimizacken/agent
+```
+
+This copies the following into `.github/` in the current directory:
+
+- `copilot-instructions.md` - the always-on Copilot instruction layer
+- `skills/` - reusable skill files (conventional-commits, formatting, functional-coding-style, and more)
+
+Requires Node 18+ and GitHub access (SSH key or a `GH_TOKEN` env var for private repo access).
+
 ## What This Repo Is For
 
 - maintain a reusable, high-signal `AGENT.md`
