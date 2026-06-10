@@ -13,5 +13,8 @@
   "engines": {
     "node": ">=18"
   },
+  "scripts": {
+    "test": "node --test bin/install.test.js"
+  },
   "license": "MIT"
 }
