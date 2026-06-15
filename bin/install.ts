@@ -18,7 +18,9 @@ interface Prompter {
 const parseAgentsInput = (raw: string): Agent[] => {
   const input = raw.trim().toLowerCase();
 
-  if (!input) { return ["copilot"]; }
+  if (!input) {
+    return ["copilot"];
+  }
 
   const matched = input
     .split(",")
@@ -29,25 +31,37 @@ const parseAgentsInput = (raw: string): Agent[] => {
 };
 
 const instructionsSrc = (agent: Agent, srcGithub: string): string => {
-  if (agent === "claude") { return path.join(srcGithub, "agent-instructions", "claude.md"); }
+  if (agent === "claude") {
+    return path.join(srcGithub, "agent-instructions", "claude.md");
+  }
 
-  if (agent === "codex") { return path.join(srcGithub, "agent-instructions", "codex.md"); }
+  if (agent === "codex") {
+    return path.join(srcGithub, "agent-instructions", "codex.md");
+  }
 
   return path.join(srcGithub, "copilot-instructions.md");
 };
 
 const instructionsDest = (agent: Agent, cwd: string): string => {
-  if (agent === "claude") { return path.join(cwd, "CLAUDE.md"); }
+  if (agent === "claude") {
+    return path.join(cwd, "CLAUDE.md");
+  }
 
-  if (agent === "codex") { return path.join(cwd, "AGENTS.md"); }
+  if (agent === "codex") {
+    return path.join(cwd, "AGENTS.md");
+  }
 
   return path.join(cwd, ".github", "copilot-instructions.md");
 };
 
 const skillsDir = (agent: Agent, cwd: string): string => {
-  if (agent === "claude") { return path.join(cwd, ".claude", "skills"); }
+  if (agent === "claude") {
+    return path.join(cwd, ".claude", "skills");
+  }
 
-  if (agent === "codex") { return path.join(cwd, ".agents", "skills"); }
+  if (agent === "codex") {
+    return path.join(cwd, ".agents", "skills");
+  }
 
   return path.join(cwd, ".github", "skills");
 };
@@ -102,6 +116,7 @@ const createPrompter = (): Prompter => {
 const copyInstructions = (srcPath: string, destPath: string): void => {
   fs.mkdirSync(path.dirname(destPath), { recursive: true });
   fs.copyFileSync(srcPath, destPath);
+
   console.log(`  wrote  ${path.relative(process.cwd(), destPath)}`);
 };
 
@@ -109,6 +124,7 @@ const copySkill = (srcBase: string, destBase: string, skill: string): void => {
   fs.cpSync(path.join(srcBase, skill), path.join(destBase, skill), {
     recursive: true,
   });
+
   console.log(
     `  wrote  ${path.relative(process.cwd(), path.join(destBase, skill))}/`,
   );
@@ -130,7 +146,9 @@ const ttySelectAgents = (): Promise<Agent[]> => {
   const { stdin, stdout } = process;
 
   const renderList = () => {
-    if (lineCount > 0) { stdout.write(`\x1b[${lineCount}A\x1b[0J`); }
+    if (lineCount > 0) {
+      stdout.write(`\x1b[${lineCount}A\x1b[0J`);
+    }
 
     const lines = [
       "  Select agent(s)  \x1b[2m(↑↓ navigate · space toggle · enter confirm)\x1b[0m",
@@ -158,7 +176,9 @@ const ttySelectAgents = (): Promise<Agent[]> => {
       stdin.pause();
       stdout.write("\x1b[?25h");
 
-      if (lineCount > 0) { stdout.write(`\x1b[${lineCount}A\x1b[0J`); }
+      if (lineCount > 0) {
+        stdout.write(`\x1b[${lineCount}A\x1b[0J`);
+      }
 
       stdout.write(`  agents: ${result.join(", ")}\n`);
     };
@@ -215,9 +235,12 @@ const promptSkills = async (
     `Install all ${skills.length} skills? [Y/n]: `,
   );
 
-  if (allAnswer.trim().toLowerCase() !== "n") { return skills; }
+  if (allAnswer.trim().toLowerCase() !== "n") {
+    return skills;
+  }
 
   console.log("\nAvailable skills:");
+
   skills.forEach((s, i) => console.log(`  ${i + 1}) ${s}`));
 
   const selection = await prompter.ask(
@@ -277,5 +300,6 @@ const main = async (): Promise<void> => {
 
 main().catch((err: unknown) => {
   console.error(err);
+
   process.exit(1);
 });
