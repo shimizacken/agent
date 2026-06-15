@@ -103,7 +103,7 @@ const ttySelectAgents = () => {
         { value: "claude", label: "claude" },
         { value: "codex", label: "codex" },
     ];
-    const selected = new Set(["copilot"]);
+    const selected = new Set();
     let cursor = 0;
     let lineCount = 0;
     const { stdin, stdout } = process;

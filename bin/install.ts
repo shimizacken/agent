@@ -137,7 +137,7 @@ const ttySelectAgents = (): Promise<Agent[]> => {
     { value: "codex", label: "codex" },
   ];
 
-  const selected = new Set<Agent>(["copilot"]);
+  const selected = new Set<Agent>();
   let cursor = 0;
   let lineCount = 0;
 
