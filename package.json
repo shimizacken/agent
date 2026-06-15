@@ -16,7 +16,13 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node --test bin/install.test.js"
+    "build": "tsc",
+    "prepare": "tsc",
+    "test": "tsc && node --test bin/install.test.js"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "typescript": "^6.0.3"
+  }
 }
