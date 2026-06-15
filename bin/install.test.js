@@ -90,6 +90,62 @@ describe("install script - claude agent", () => {
   });
 });
 
+describe("install script - multiple agents", () => {
+  let tmpDir;
+
+  before(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "copilot-setup-multi-"));
+  });
+
+  after(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("exits with code 0", () => {
+    const result = run("copilot,claude\n\n", tmpDir);
+
+    assert.equal(result.status, 0);
+  });
+
+  it("copies copilot-instructions.md", () => {
+    assert.ok(
+      fs.existsSync(path.join(tmpDir, ".github", "copilot-instructions.md")),
+    );
+  });
+
+  it("copies CLAUDE.md", () => {
+    assert.ok(fs.existsSync(path.join(tmpDir, "CLAUDE.md")));
+  });
+
+  it("copies skills to .github/skills/", () => {
+    assert.ok(
+      fs.existsSync(
+        path.join(
+          tmpDir,
+          ".github",
+          "skills",
+          "conventional-commits",
+          "SKILL.md",
+        ),
+      ),
+    );
+  });
+
+  it("copies skills to .claude/skills/", () => {
+    assert.ok(
+      fs.existsSync(
+        path.join(
+          tmpDir,
+          ".claude",
+          "skills",
+          "conventional-commits",
+          "SKILL.md",
+        ),
+      ),
+    );
+  });
+});
+
 describe("install script - codex agent", () => {
   let tmpDir;
 

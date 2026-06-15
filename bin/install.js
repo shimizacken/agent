@@ -8,14 +8,19 @@ const readline = require("readline");
 
 const AGENTS = ["copilot", "claude", "codex"];
 
-const parseAgentInput = (raw) => {
+const parseAgentsInput = (raw) => {
   const input = raw.trim().toLowerCase();
 
   if (!input) {
-    return "copilot";
+    return ["copilot"];
   }
 
-  return AGENTS.find((a) => a.startsWith(input)) ?? "copilot";
+  const matched = input
+    .split(",")
+    .map((s) => AGENTS.find((a) => a.startsWith(s.trim())))
+    .filter(Boolean);
+
+  return matched.length > 0 ? matched : ["copilot"];
 };
 
 const instructionsSrc = (agent, srcGithub) => {
@@ -118,10 +123,10 @@ const copySkill = (srcBase, destBase, skill) => {
 
 const promptAgent = async (prompter) => {
   const raw = await prompter.ask(
-    "Agent [copilot/claude/codex] (default: copilot): ",
+    "Agent(s) [copilot/claude/codex] (default: copilot, comma-separated for multiple): ",
   );
 
-  return parseAgentInput(raw);
+  return parseAgentsInput(raw);
 };
 
 const promptSkills = async (prompter, skills) => {
@@ -152,31 +157,35 @@ const main = async () => {
   const srcSkillsBase = path.join(srcGithub, "skills");
   const cwd = process.cwd();
 
-  const agent = await promptAgent(prompter);
+  const agents = await promptAgent(prompter);
   const allSkills = listSkills(srcSkillsBase);
   const selectedSkills = await promptSkills(prompter, allSkills);
 
   prompter.close();
   console.log("");
 
-  copyInstructions(
-    instructionsSrc(agent, srcGithub),
-    instructionsDest(agent, cwd),
-  );
+  agents.forEach((agent) => {
+    copyInstructions(
+      instructionsSrc(agent, srcGithub),
+      instructionsDest(agent, cwd),
+    );
+
+    const destSkillsBase = skillsDir(agent, cwd);
+
+    selectedSkills.forEach((skill) =>
+      copySkill(srcSkillsBase, destSkillsBase, skill),
+    );
+  });
 
   copyInstructions(
     path.join(__dirname, "..", "AGENT.md"),
     path.join(cwd, "AGENT.md"),
   );
 
-  const destSkillsBase = skillsDir(agent, cwd);
-
-  selectedSkills.forEach((skill) =>
-    copySkill(srcSkillsBase, destSkillsBase, skill),
-  );
+  const totalItems = agents.length * (1 + selectedSkills.length) + 1;
 
   console.log(
-    `\ndone - ${2 + selectedSkills.length} item(s) installed for ${agent}`,
+    `\ndone - ${totalItems} item(s) installed for ${agents.join(", ")}`,
   );
 };
 
