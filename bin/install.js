@@ -162,7 +162,7 @@ const ttySelectAgents = () => {
                 renderList();
             }
             else if (key === "\r") {
-                const result = selected.size > 0 ? [...selected] : ["copilot"];
+                const result = selected.size > 0 ? [...selected] : [options[cursor].value];
                 cleanup(result);
                 resolve(result);
             }

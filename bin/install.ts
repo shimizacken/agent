@@ -206,7 +206,7 @@ const ttySelectAgents = (): Promise<Agent[]> => {
 
         renderList();
       } else if (key === "\r") {
-        const result: Agent[] = selected.size > 0 ? [...selected] : ["copilot"];
+        const result: Agent[] = selected.size > 0 ? [...selected] : [options[cursor].value];
 
         cleanup(result);
         resolve(result);
