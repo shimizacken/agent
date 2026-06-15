@@ -60,7 +60,10 @@ const parseSkillSelection = (raw, skills) => {
 };
 // --- side effects ---
 const createPrompter = () => {
-    const rl = readline_1.default.createInterface({ input: process.stdin, output: process.stdout });
+    const rl = readline_1.default.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
     const buffer = [];
     const waiters = [];
     rl.on("line", (line) => {
@@ -88,7 +91,9 @@ const copyInstructions = (srcPath, destPath) => {
     console.log(`  wrote  ${path_1.default.relative(process.cwd(), destPath)}`);
 };
 const copySkill = (srcBase, destBase, skill) => {
-    fs_1.default.cpSync(path_1.default.join(srcBase, skill), path_1.default.join(destBase, skill), { recursive: true });
+    fs_1.default.cpSync(path_1.default.join(srcBase, skill), path_1.default.join(destBase, skill), {
+        recursive: true,
+    });
     console.log(`  wrote  ${path_1.default.relative(process.cwd(), path_1.default.join(destBase, skill))}/`);
 };
 // --- prompts ---

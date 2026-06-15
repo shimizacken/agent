@@ -36,7 +36,13 @@ describe("install script", () => {
   });
 
   it("copies conventional-commits SKILL.md", () => {
-    const target = path.join(tmpDir, ".github", "skills", "conventional-commits", "SKILL.md");
+    const target = path.join(
+      tmpDir,
+      ".github",
+      "skills",
+      "conventional-commits",
+      "SKILL.md",
+    );
 
     assert.ok(fs.existsSync(target), `expected ${target} to exist`);
   });
@@ -72,7 +78,13 @@ describe("install script - claude agent", () => {
   });
 
   it("copies skills to .claude/skills/", () => {
-    const target = path.join(tmpDir, ".claude", "skills", "conventional-commits", "SKILL.md");
+    const target = path.join(
+      tmpDir,
+      ".claude",
+      "skills",
+      "conventional-commits",
+      "SKILL.md",
+    );
 
     assert.ok(fs.existsSync(target), `expected ${target} to exist`);
   });
@@ -96,7 +108,9 @@ describe("install script - multiple agents", () => {
   });
 
   it("copies copilot-instructions.md", () => {
-    assert.ok(fs.existsSync(path.join(tmpDir, ".github", "copilot-instructions.md")));
+    assert.ok(
+      fs.existsSync(path.join(tmpDir, ".github", "copilot-instructions.md")),
+    );
   });
 
   it("copies CLAUDE.md", () => {
@@ -104,11 +118,31 @@ describe("install script - multiple agents", () => {
   });
 
   it("copies skills to .github/skills/", () => {
-    assert.ok(fs.existsSync(path.join(tmpDir, ".github", "skills", "conventional-commits", "SKILL.md")));
+    assert.ok(
+      fs.existsSync(
+        path.join(
+          tmpDir,
+          ".github",
+          "skills",
+          "conventional-commits",
+          "SKILL.md",
+        ),
+      ),
+    );
   });
 
   it("copies skills to .claude/skills/", () => {
-    assert.ok(fs.existsSync(path.join(tmpDir, ".claude", "skills", "conventional-commits", "SKILL.md")));
+    assert.ok(
+      fs.existsSync(
+        path.join(
+          tmpDir,
+          ".claude",
+          "skills",
+          "conventional-commits",
+          "SKILL.md",
+        ),
+      ),
+    );
   });
 });
 
@@ -136,7 +170,13 @@ describe("install script - codex agent", () => {
   });
 
   it("copies skills to .agents/skills/", () => {
-    const target = path.join(tmpDir, ".agents", "skills", "conventional-commits", "SKILL.md");
+    const target = path.join(
+      tmpDir,
+      ".agents",
+      "skills",
+      "conventional-commits",
+      "SKILL.md",
+    );
 
     assert.ok(fs.existsSync(target), `expected ${target} to exist`);
   });

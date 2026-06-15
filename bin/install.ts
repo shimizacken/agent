@@ -18,7 +18,9 @@ interface Prompter {
 const parseAgentsInput = (raw: string): Agent[] => {
   const input = raw.trim().toLowerCase();
 
-  if (!input) { return ["copilot"]; }
+  if (!input) {
+    return ["copilot"];
+  }
 
   const matched = input
     .split(",")
@@ -29,25 +31,37 @@ const parseAgentsInput = (raw: string): Agent[] => {
 };
 
 const instructionsSrc = (agent: Agent, srcGithub: string): string => {
-  if (agent === "claude") { return path.join(srcGithub, "agent-instructions", "claude.md"); }
+  if (agent === "claude") {
+    return path.join(srcGithub, "agent-instructions", "claude.md");
+  }
 
-  if (agent === "codex") { return path.join(srcGithub, "agent-instructions", "codex.md"); }
+  if (agent === "codex") {
+    return path.join(srcGithub, "agent-instructions", "codex.md");
+  }
 
   return path.join(srcGithub, "copilot-instructions.md");
 };
 
 const instructionsDest = (agent: Agent, cwd: string): string => {
-  if (agent === "claude") { return path.join(cwd, "CLAUDE.md"); }
+  if (agent === "claude") {
+    return path.join(cwd, "CLAUDE.md");
+  }
 
-  if (agent === "codex") { return path.join(cwd, "AGENTS.md"); }
+  if (agent === "codex") {
+    return path.join(cwd, "AGENTS.md");
+  }
 
   return path.join(cwd, ".github", "copilot-instructions.md");
 };
 
 const skillsDir = (agent: Agent, cwd: string): string => {
-  if (agent === "claude") { return path.join(cwd, ".claude", "skills"); }
+  if (agent === "claude") {
+    return path.join(cwd, ".claude", "skills");
+  }
 
-  if (agent === "codex") { return path.join(cwd, ".agents", "skills"); }
+  if (agent === "codex") {
+    return path.join(cwd, ".agents", "skills");
+  }
 
   return path.join(cwd, ".github", "skills");
 };
@@ -70,7 +84,10 @@ const parseSkillSelection = (raw: string, skills: string[]): string[] => {
 // --- side effects ---
 
 const createPrompter = (): Prompter => {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
   const buffer: string[] = [];
   const waiters: Array<(line: string) => void> = [];
 
@@ -103,8 +120,12 @@ const copyInstructions = (srcPath: string, destPath: string): void => {
 };
 
 const copySkill = (srcBase: string, destBase: string, skill: string): void => {
-  fs.cpSync(path.join(srcBase, skill), path.join(destBase, skill), { recursive: true });
-  console.log(`  wrote  ${path.relative(process.cwd(), path.join(destBase, skill))}/`);
+  fs.cpSync(path.join(srcBase, skill), path.join(destBase, skill), {
+    recursive: true,
+  });
+  console.log(
+    `  wrote  ${path.relative(process.cwd(), path.join(destBase, skill))}/`,
+  );
 };
 
 // --- prompts ---
@@ -117,15 +138,24 @@ const promptAgent = async (prompter: Prompter): Promise<Agent[]> => {
   return parseAgentsInput(raw);
 };
 
-const promptSkills = async (prompter: Prompter, skills: string[]): Promise<string[]> => {
-  const allAnswer = await prompter.ask(`Install all ${skills.length} skills? [Y/n]: `);
+const promptSkills = async (
+  prompter: Prompter,
+  skills: string[],
+): Promise<string[]> => {
+  const allAnswer = await prompter.ask(
+    `Install all ${skills.length} skills? [Y/n]: `,
+  );
 
-  if (allAnswer.trim().toLowerCase() !== "n") { return skills; }
+  if (allAnswer.trim().toLowerCase() !== "n") {
+    return skills;
+  }
 
   console.log("\nAvailable skills:");
   skills.forEach((s, i) => console.log(`  ${i + 1}) ${s}`));
 
-  const selection = await prompter.ask("\nEnter numbers to install (e.g. 1,3): ");
+  const selection = await prompter.ask(
+    "\nEnter numbers to install (e.g. 1,3): ",
+  );
 
   return parseSkillSelection(selection, skills);
 };
@@ -147,7 +177,10 @@ const main = async (): Promise<void> => {
   console.log("");
 
   agents.forEach((agent) => {
-    copyInstructions(instructionsSrc(agent, srcGithub), instructionsDest(agent, cwd));
+    copyInstructions(
+      instructionsSrc(agent, srcGithub),
+      instructionsDest(agent, cwd),
+    );
 
     const dest = skillsDir(agent, cwd);
 
@@ -161,7 +194,9 @@ const main = async (): Promise<void> => {
 
   const totalItems = agents.length * (1 + selectedSkills.length) + 1;
 
-  console.log(`\ndone - ${totalItems} item(s) installed for ${agents.join(", ")}`);
+  console.log(
+    `\ndone - ${totalItems} item(s) installed for ${agents.join(", ")}`,
+  );
 };
 
 main().catch((err: unknown) => {
