@@ -76,6 +76,18 @@ describe("install script - claude agent", () => {
 
     assert.ok(fs.existsSync(target), `expected ${target} to exist`);
   });
+
+  it("copies skills to .claude/skills/", () => {
+    const target = path.join(
+      tmpDir,
+      ".claude",
+      "skills",
+      "conventional-commits",
+      "SKILL.md",
+    );
+
+    assert.ok(fs.existsSync(target), `expected ${target} to exist`);
+  });
 });
 
 describe("install script - codex agent", () => {
@@ -97,6 +109,18 @@ describe("install script - codex agent", () => {
 
   it("copies AGENTS.md to project root", () => {
     const target = path.join(tmpDir, "AGENTS.md");
+
+    assert.ok(fs.existsSync(target), `expected ${target} to exist`);
+  });
+
+  it("copies skills to .agents/skills/", () => {
+    const target = path.join(
+      tmpDir,
+      ".agents",
+      "skills",
+      "conventional-commits",
+      "SKILL.md",
+    );
 
     assert.ok(fs.existsSync(target), `expected ${target} to exist`);
   });

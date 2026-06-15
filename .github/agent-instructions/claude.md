@@ -10,6 +10,8 @@ Replace these with your project's actual commands:
 - Test: `pnpm test`
 - Lint: `pnpm lint`
 
+- Skills are located in `.claude/skills/` - see the `conventional-commits`, `formatting`, and `functional-coding-style` skills
+
 ## Engineering Rules
 
 - follow the existing codebase before introducing new abstractions

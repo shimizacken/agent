@@ -42,6 +42,18 @@ const instructionsDest = (agent, cwd) => {
   return path.join(cwd, ".github", "copilot-instructions.md");
 };
 
+const skillsDir = (agent, cwd) => {
+  if (agent === "claude") {
+    return path.join(cwd, ".claude", "skills");
+  }
+
+  if (agent === "codex") {
+    return path.join(cwd, ".agents", "skills");
+  }
+
+  return path.join(cwd, ".github", "skills");
+};
+
 const listSkills = (srcBase) =>
   fs
     .readdirSync(srcBase, { withFileTypes: true })
@@ -157,7 +169,7 @@ const main = async () => {
     path.join(cwd, "AGENT.md"),
   );
 
-  const destSkillsBase = path.join(cwd, ".github", "skills");
+  const destSkillsBase = skillsDir(agent, cwd);
 
   selectedSkills.forEach((skill) =>
     copySkill(srcSkillsBase, destSkillsBase, skill),
