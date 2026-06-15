@@ -128,6 +128,93 @@ const copySkill = (srcBase: string, destBase: string, skill: string): void => {
   );
 };
 
+// --- interactive TTY agent selector ---
+
+const ttySelectAgents = (): Promise<Agent[]> => {
+  const options: Array<{ value: Agent; label: string }> = [
+    { value: "copilot", label: "copilot (default)" },
+    { value: "claude", label: "claude" },
+    { value: "codex", label: "codex" },
+  ];
+
+  const selected = new Set<Agent>(["copilot"]);
+  let cursor = 0;
+  let lineCount = 0;
+
+  const { stdin, stdout } = process;
+
+  const renderList = () => {
+    if (lineCount > 0) {
+      stdout.write(`\x1b[${lineCount}A\x1b[0J`);
+    }
+
+    const lines = [
+      "  Select agent(s)  \x1b[2m(↑↓ navigate · space toggle · enter confirm)\x1b[0m",
+      ...options.map((opt, i) => {
+        const pointer = i === cursor ? "\x1b[36m>\x1b[0m" : " ";
+        const check = selected.has(opt.value) ? "\x1b[32m●\x1b[0m" : "○";
+
+        return `  ${pointer} ${check}  ${opt.label}`;
+      }),
+    ];
+
+    stdout.write(lines.join("\n") + "\n");
+    lineCount = lines.length;
+  };
+
+  stdout.write("\x1b[?25l");
+  (stdin as NodeJS.ReadStream).setRawMode(true);
+  stdin.resume();
+  renderList();
+
+  return new Promise<Agent[]>((resolve) => {
+    const cleanup = (result: Agent[]) => {
+      stdin.removeListener("data", onData);
+      (stdin as NodeJS.ReadStream).setRawMode(false);
+      stdin.pause();
+      stdout.write("\x1b[?25h");
+
+      if (lineCount > 0) {
+        stdout.write(`\x1b[${lineCount}A\x1b[0J`);
+      }
+
+      stdout.write(`  agents: ${result.join(", ")}\n`);
+    };
+
+    const onData = (chunk: Buffer) => {
+      const key = chunk.toString();
+
+      if (key === "\x03") {
+        cleanup([]);
+        process.exit(130);
+      } else if (key === "\x1b[A") {
+        cursor = (cursor - 1 + options.length) % options.length;
+        renderList();
+      } else if (key === "\x1b[B") {
+        cursor = (cursor + 1) % options.length;
+        renderList();
+      } else if (key === " ") {
+        const val = options[cursor].value;
+
+        if (selected.has(val)) {
+          selected.delete(val);
+        } else {
+          selected.add(val);
+        }
+
+        renderList();
+      } else if (key === "\r") {
+        const result: Agent[] = selected.size > 0 ? [...selected] : ["copilot"];
+
+        cleanup(result);
+        resolve(result);
+      }
+    };
+
+    stdin.on("data", onData);
+  });
+};
+
 // --- prompts ---
 
 const promptAgent = async (prompter: Prompter): Promise<Agent[]> => {
@@ -163,17 +250,26 @@ const promptSkills = async (
 // --- main ---
 
 const main = async (): Promise<void> => {
-  const prompter = createPrompter();
-
   const srcGithub = path.join(__dirname, "..", ".github");
   const srcSkillsBase = path.join(srcGithub, "skills");
   const cwd = process.cwd();
-
-  const agents = await promptAgent(prompter);
   const allSkills = listSkills(srcSkillsBase);
-  const selectedSkills = await promptSkills(prompter, allSkills);
 
-  prompter.close();
+  let agents: Agent[];
+  let selectedSkills: string[];
+
+  if (process.stdin.isTTY) {
+    agents = await ttySelectAgents();
+    const prompter = createPrompter();
+    selectedSkills = await promptSkills(prompter, allSkills);
+    prompter.close();
+  } else {
+    const prompter = createPrompter();
+    agents = await promptAgent(prompter);
+    selectedSkills = await promptSkills(prompter, allSkills);
+    prompter.close();
+  }
+
   console.log("");
 
   agents.forEach((agent) => {
