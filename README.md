@@ -25,6 +25,31 @@ This copies the following into `.github/` in the current directory:
 
 Requires Node 18+ and GitHub access (SSH key or a `GH_TOKEN` env var for private repo access).
 
+### Installed structure
+
+```
+customer-work/
+├── AGENT.md                          # always installed
+├── CLAUDE.md                         # claude agent
+├── AGENTS.md                         # codex agent
+├── .github/
+│   ├── copilot-instructions.md       # copilot agent
+│   └── skills/                       # copilot skills
+│       ├── conventional-commits/
+│       ├── formatting/
+│       └── functional-coding-style/
+├── .claude/
+│   └── skills/                       # claude skills
+│       ├── conventional-commits/
+│       ├── formatting/
+│       └── functional-coding-style/
+└── .agents/
+    └── skills/                       # codex skills
+        ├── conventional-commits/
+        ├── formatting/
+        └── functional-coding-style/
+```
+
 ## What This Repo Is For
 
 - maintain a reusable, high-signal `AGENT.md`
