@@ -382,27 +382,103 @@ const ttySelectSkills = (allSkills: string[]): Promise<string[]> => {
   });
 };
 
+// --- update helpers ---
+
+const detectInstalledAgents = (cwd: string): Agent[] =>
+  AGENTS.filter((agent) => fs.existsSync(instructionsDest(agent, cwd)));
+
+const detectInstalledSkills = (agent: Agent, cwd: string): string[] => {
+  const dir = skillsDir(agent, cwd);
+
+  if (!fs.existsSync(dir)) { return []; }
+
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name);
+};
+
+// --- TTY mode selector ---
+
+const ttySelectMode = (): Promise<"install" | "update"> => {
+  type Mode = "install" | "update";
+
+  const options: Array<{ value: Mode; label: string }> = [
+    { value: "install", label: "Fresh install" },
+    { value: "update", label: "Update existing" },
+  ];
+
+  let cursor = 0;
+  let lineCount = 0;
+
+  const { stdin, stdout } = process;
+
+  const renderList = () => {
+    if (lineCount > 0) { stdout.write(`\x1b[${lineCount}A\x1b[0J`); }
+
+    const lines = [
+      "  Mode  \x1b[2m(\u2191\u2193 navigate \u00b7 enter confirm)\x1b[0m",
+      ...options.map((opt, i) => {
+        const pointer = i === cursor ? "\x1b[36m>\x1b[0m" : " ";
+
+        return `  ${pointer}  ${opt.label}`;
+      }),
+    ];
+
+    stdout.write(lines.join("\n") + "\n");
+    lineCount = lines.length;
+  };
+
+  stdout.write("\x1b[?25l");
+  (stdin as NodeJS.ReadStream).setRawMode(true);
+  stdin.resume();
+  renderList();
+
+  return new Promise<Mode>((resolve) => {
+    const cleanup = (result: Mode) => {
+      stdin.removeListener("data", onData);
+      (stdin as NodeJS.ReadStream).setRawMode(false);
+      stdin.pause();
+      stdout.write("\x1b[?25h");
+
+      if (lineCount > 0) { stdout.write(`\x1b[${lineCount}A\x1b[0J`); }
+
+      stdout.write(`  mode: ${result}\n`);
+    };
+
+    const onData = (chunk: Buffer) => {
+      const key = chunk.toString();
+
+      if (key === "\x03") {
+        cleanup("install");
+        process.exit(130);
+      } else if (key === "\x1b[A") {
+        cursor = (cursor - 1 + options.length) % options.length;
+        renderList();
+      } else if (key === "\x1b[B") {
+        cursor = (cursor + 1) % options.length;
+        renderList();
+      } else if (key === "\r") {
+        const result = options[cursor].value;
+
+        cleanup(result);
+        resolve(result);
+      }
+    };
+
+    stdin.on("data", onData);
+  });
+};
+
 // --- main ---
 
-const main = async (): Promise<void> => {
-  const srcGithub = path.join(__dirname, "..", ".github");
-  const srcSkillsBase = path.join(__dirname, "..", ".agent", "skills");
-  const cwd = process.cwd();
-  const allSkills = listSkills(srcSkillsBase);
-
-  let agents: Agent[];
-  let selectedSkills: string[];
-
-  if (process.stdin.isTTY) {
-    agents = await ttySelectAgents();
-    selectedSkills = await ttySelectSkills(allSkills);
-  } else {
-    const prompter = createPrompter();
-    agents = await promptAgent(prompter);
-    selectedSkills = await promptSkills(prompter, allSkills);
-    prompter.close();
-  }
-
+const runInstall = (
+  agents: Agent[],
+  selectedSkills: string[],
+  srcGithub: string,
+  srcSkillsBase: string,
+  cwd: string,
+): void => {
   console.log("");
 
   agents.forEach((agent) => {
@@ -428,9 +504,74 @@ const main = async (): Promise<void> => {
 
   const totalItems = agents.length * (1 + selectedSkills.length) + 1;
 
-  console.log(
-    `\ndone - ${totalItems} item(s) installed for ${agents.join(", ")}`,
+  console.log(`\ndone - ${totalItems} item(s) installed for ${agents.join(", ")}`);
+};
+
+const runUpdate = (srcGithub: string, srcSkillsBase: string, cwd: string): void => {
+  const agents = detectInstalledAgents(cwd);
+
+  if (agents.length === 0) {
+    console.log("  nothing found to update - run a fresh install first");
+    return;
+  }
+
+  const allSourceSkills = listSkills(srcSkillsBase);
+
+  console.log("");
+
+  agents.forEach((agent) => {
+    copyInstructions(instructionsSrc(agent, srcGithub), instructionsDest(agent, cwd));
+
+    const dest = skillsDir(agent, cwd);
+    const installed = detectInstalledSkills(agent, cwd);
+
+    // overwrite existing skills and add new non-code ones; skip new code skills
+    allSourceSkills.forEach((skill) => {
+      if (installed.includes(skill) || NON_CODE_SKILLS.has(skill)) {
+        copySkill(srcSkillsBase, dest, skill);
+      }
+    });
+
+    if (agent === "copilot") {
+      copyCopilotDirectory(srcGithub, cwd, "instructions");
+      copyCopilotDirectory(srcGithub, cwd, "prompts");
+    }
+  });
+
+  copyInstructions(
+    path.join(__dirname, "..", "AGENT.md"),
+    path.join(cwd, "AGENT.md"),
   );
+
+  console.log(`\ndone - updated ${agents.join(", ")}`);
+};
+
+const main = async (): Promise<void> => {
+  const srcGithub = path.join(__dirname, "..", ".github");
+  const srcSkillsBase = path.join(__dirname, "..", ".agent", "skills");
+  const cwd = process.cwd();
+
+  if (process.stdin.isTTY) {
+    const mode = await ttySelectMode();
+
+    if (mode === "update") {
+      runUpdate(srcGithub, srcSkillsBase, cwd);
+      return;
+    }
+
+    const agents = await ttySelectAgents();
+    const selectedSkills = await ttySelectSkills(listSkills(srcSkillsBase));
+
+    runInstall(agents, selectedSkills, srcGithub, srcSkillsBase, cwd);
+  } else {
+    const prompter = createPrompter();
+    const agents = await promptAgent(prompter);
+    const selectedSkills = await promptSkills(prompter, listSkills(srcSkillsBase));
+
+    prompter.close();
+
+    runInstall(agents, selectedSkills, srcGithub, srcSkillsBase, cwd);
+  }
 };
 
 main().catch((err: unknown) => {
