@@ -24,7 +24,7 @@ describe("install script", () => {
   });
 
   it("exits with code 0 (default copilot)", () => {
-    const result = run("\n\n", tmpDir);
+    const result = run("\n\n\n", tmpDir);
 
     assert.equal(result.status, 0);
   });
@@ -84,7 +84,7 @@ describe("install script - claude agent", () => {
   });
 
   it("exits with code 0", () => {
-    const result = run("claude\n\n", tmpDir);
+    const result = run("claude\n\n\n", tmpDir);
 
     assert.equal(result.status, 0);
   });
@@ -120,7 +120,7 @@ describe("install script - multiple agents", () => {
   });
 
   it("exits with code 0", () => {
-    const result = run("copilot,claude\n\n", tmpDir);
+    const result = run("copilot,claude\n\n\n", tmpDir);
 
     assert.equal(result.status, 0);
   });
@@ -176,7 +176,7 @@ describe("install script - codex agent", () => {
   });
 
   it("exits with code 0", () => {
-    const result = run("codex\n\n", tmpDir);
+    const result = run("codex\n\n\n", tmpDir);
 
     assert.equal(result.status, 0);
   });

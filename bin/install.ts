@@ -10,6 +10,15 @@ const AGENTS = ["copilot", "claude", "codex"] as const;
 
 type Agent = (typeof AGENTS)[number];
 
+const NON_CODE_SKILLS = new Set([
+  "code-change",
+  "conventional-commits",
+  "git-commits",
+  "incremental-implementation",
+  "incremental-planning",
+  "shortcuts",
+]);
+
 interface Prompter {
   ask: (question: string) => Promise<string>;
   close: () => void;
@@ -245,23 +254,132 @@ const promptSkills = async (
   prompter: Prompter,
   skills: string[],
 ): Promise<string[]> => {
-  const allAnswer = await prompter.ask(
-    `Install all ${skills.length} skills? [Y/n]: `,
+  const nonCode = skills.filter((s) => NON_CODE_SKILLS.has(s));
+  const code = skills.filter((s) => !NON_CODE_SKILLS.has(s));
+
+  const nonCodeAnswer = await prompter.ask(
+    `Install ${nonCode.length} non-code skills? [Y/n]: `,
+  );
+  const codeAnswer = await prompter.ask(
+    `Install ${code.length} code skills? [y/N]: `,
   );
 
-  if (allAnswer.trim().toLowerCase() !== "n") {
-    return skills;
-  }
+  return [
+    ...(nonCodeAnswer.trim().toLowerCase() !== "n" ? nonCode : []),
+    ...(codeAnswer.trim().toLowerCase() === "y" ? code : []),
+  ];
+};
 
-  console.log("\nAvailable skills:");
+// --- interactive TTY skill selector ---
 
-  skills.forEach((s, i) => console.log(`  ${i + 1}) ${s}`));
+const ttySelectSkills = (allSkills: string[]): Promise<string[]> => {
+  type Item =
+    | { kind: "header"; label: string }
+    | { kind: "option"; value: string };
 
-  const selection = await prompter.ask(
-    "\nEnter numbers to install (e.g. 1,3): ",
-  );
+  const nonCode = allSkills.filter((s) => NON_CODE_SKILLS.has(s));
+  const code = allSkills.filter((s) => !NON_CODE_SKILLS.has(s));
 
-  return parseSkillSelection(selection, skills);
+  const items: Item[] = [
+    { kind: "header", label: "Non-code" },
+    ...nonCode.map((s): Item => ({ kind: "option", value: s })),
+    { kind: "header", label: "Code" },
+    ...code.map((s): Item => ({ kind: "option", value: s })),
+  ];
+
+  const optionIndices = items.reduce<number[]>((acc, item, i) => {
+    if (item.kind === "option") { acc.push(i); }
+
+    return acc;
+  }, []);
+
+  const selected = new Set<string>(nonCode);
+  let cursorIdx = 0;
+  let lineCount = 0;
+
+  const { stdin, stdout } = process;
+
+  const renderList = () => {
+    if (lineCount > 0) { stdout.write(`\x1b[${lineCount}A\x1b[0J`); }
+
+    const lines = [
+      "  Select skills  \x1b[2m(\u2191\u2193 navigate \u00b7 space toggle \u00b7 enter confirm)\x1b[0m",
+    ];
+
+    const cursorItemIdx = optionIndices[cursorIdx];
+
+    items.forEach((item, i) => {
+      if (item.kind === "header") {
+        if (i > 0) { lines.push(""); }
+
+        lines.push(`  \x1b[2m${item.label}\x1b[0m`);
+      } else {
+        const isCursor = i === cursorItemIdx;
+        const isSelected = selected.has(item.value);
+        const pointer = isCursor ? "\x1b[36m>\x1b[0m" : " ";
+        const check = isSelected ? "\x1b[32m\u25cf\x1b[0m" : "\u25cb";
+
+        lines.push(`  ${pointer} ${check}  ${item.value}`);
+      }
+    });
+
+    stdout.write(lines.join("\n") + "\n");
+    lineCount = lines.length;
+  };
+
+  stdout.write("\x1b[?25l");
+  (stdin as NodeJS.ReadStream).setRawMode(true);
+  stdin.resume();
+  renderList();
+
+  return new Promise<string[]>((resolve) => {
+    const cleanup = (result: string[]) => {
+      stdin.removeListener("data", onData);
+      (stdin as NodeJS.ReadStream).setRawMode(false);
+      stdin.pause();
+      stdout.write("\x1b[?25h");
+
+      if (lineCount > 0) { stdout.write(`\x1b[${lineCount}A\x1b[0J`); }
+
+      const label = result.length > 0 ? result.join(", ") : "none";
+
+      stdout.write(`  skills: ${label}\n`);
+    };
+
+    const onData = (chunk: Buffer) => {
+      const key = chunk.toString();
+
+      if (key === "\x03") {
+        cleanup([]);
+        process.exit(130);
+      } else if (key === "\x1b[A") {
+        cursorIdx = (cursorIdx - 1 + optionIndices.length) % optionIndices.length;
+        renderList();
+      } else if (key === "\x1b[B") {
+        cursorIdx = (cursorIdx + 1) % optionIndices.length;
+        renderList();
+      } else if (key === " ") {
+        const item = items[optionIndices[cursorIdx]];
+
+        if (item.kind === "option") {
+          if (selected.has(item.value)) {
+            selected.delete(item.value);
+          } else {
+            selected.add(item.value);
+          }
+
+          renderList();
+        }
+      } else if (key === "\r") {
+        const result = [...selected];
+
+        cleanup(result);
+        resolve(result);
+      }
+    };
+
+    stdin.on("data", onData);
+  });
 };
 
 // --- main ---
@@ -277,9 +395,7 @@ const main = async (): Promise<void> => {
 
   if (process.stdin.isTTY) {
     agents = await ttySelectAgents();
-    const prompter = createPrompter();
-    selectedSkills = await promptSkills(prompter, allSkills);
-    prompter.close();
+    selectedSkills = await ttySelectSkills(allSkills);
   } else {
     const prompter = createPrompter();
     agents = await promptAgent(prompter);

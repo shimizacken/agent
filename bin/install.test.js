@@ -23,7 +23,7 @@ const run = (input, tmpDir) => (0, node_child_process_1.spawnSync)("node", [node
         node_fs_1.default.rmSync(tmpDir, { recursive: true, force: true });
     });
     (0, node_test_1.it)("exits with code 0 (default copilot)", () => {
-        const result = run("\n\n", tmpDir);
+        const result = run("\n\n\n", tmpDir);
         strict_1.default.equal(result.status, 0);
     });
     (0, node_test_1.it)("copies copilot-instructions.md for default agent", () => {
@@ -52,7 +52,7 @@ const run = (input, tmpDir) => (0, node_child_process_1.spawnSync)("node", [node
         node_fs_1.default.rmSync(tmpDir, { recursive: true, force: true });
     });
     (0, node_test_1.it)("exits with code 0", () => {
-        const result = run("claude\n\n", tmpDir);
+        const result = run("claude\n\n\n", tmpDir);
         strict_1.default.equal(result.status, 0);
     });
     (0, node_test_1.it)("copies CLAUDE.md to project root", () => {
@@ -73,7 +73,7 @@ const run = (input, tmpDir) => (0, node_child_process_1.spawnSync)("node", [node
         node_fs_1.default.rmSync(tmpDir, { recursive: true, force: true });
     });
     (0, node_test_1.it)("exits with code 0", () => {
-        const result = run("copilot,claude\n\n", tmpDir);
+        const result = run("copilot,claude\n\n\n", tmpDir);
         strict_1.default.equal(result.status, 0);
     });
     (0, node_test_1.it)("copies copilot-instructions.md", () => {
@@ -98,7 +98,7 @@ const run = (input, tmpDir) => (0, node_child_process_1.spawnSync)("node", [node
         node_fs_1.default.rmSync(tmpDir, { recursive: true, force: true });
     });
     (0, node_test_1.it)("exits with code 0", () => {
-        const result = run("codex\n\n", tmpDir);
+        const result = run("codex\n\n\n", tmpDir);
         strict_1.default.equal(result.status, 0);
     });
     (0, node_test_1.it)("copies AGENTS.md to project root", () => {
