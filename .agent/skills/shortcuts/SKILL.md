@@ -1,7 +1,7 @@
 ---
 name: shortcuts
-description: 'Use the C, CP, P, G, GP, IMP, WN, PD, and YT chat shortcuts for Git and implementation work. C means commit current changes; CP means commit and push the current branch; P means push the current branch; G means generate requested content; GP means generate a plan file; IMP means implement a plan file; WN means identify what to implement next from the current plan; PD means generate a pull request description; YT means YouTrack. Shortcuts are case-insensitive.'
-argument-hint: '<C|CP|P|G|GP|IMP|WN|PD|YT>'
+description: 'Use the C, CP, P, G, GP, IMP, WN, PD, SLC, and YT chat shortcuts for Git and implementation work. C means commit current changes; CP means commit and push the current branch; P means push the current branch; G means generate requested content; GP means generate a plan file; IMP means implement a plan file; WN means identify what to implement next from the current plan; PD means generate a pull request description; SLC means summarize the latest changes; YT means YouTrack. Shortcuts are case-insensitive.'
+argument-hint: '<C|CP|P|G|GP|IMP|WN|PD|SLC|YT>'
 user-invocable: true
 ---
 
@@ -9,7 +9,7 @@ user-invocable: true
 
 ## When to Use
 
-Use this skill when the user sends `C`, `CP`, `P`, `G`, `GP`, `IMP`, `WN`, `PD`, or `YT`, in any letter case, as a request to manage current Git work, generate content, or provide YouTrack context.
+Use this skill when the user sends `C`, `CP`, `P`, `G`, `GP`, `IMP`, `WN`, `PD`, `SLC`, or `YT`, in any letter case, as a request to manage current Git work, generate content, or provide YouTrack context.
 
 - `C`: inspect, validate, stage, and commit the intended current changes.
 - `CP`: perform the `C` workflow, then push the current branch to its upstream remote.
@@ -19,6 +19,7 @@ Use this skill when the user sends `C`, `CP`, `P`, `G`, `GP`, `IMP`, `WN`, `PD`,
 - `IMP`: implement the requested phase from a plan or implementation file, following that file's verification and commit instructions.
 - `WN`: inspect the current plan and report what should be implemented next without modifying files.
 - `PD`: follow [the PR description prompt](../../../.github/prompts/pr-description.prompt.md) to generate a consistent description without modifying the worktree.
+- `SLC`: summarize the latest changes on the current branch relative to its upstream or base branch. Use `git log` and `git diff` to produce a concise human-readable summary grouped by theme. Do not commit or push.
 - `YT`: YouTrack context. Use `YTC {link}` with `PD` to mark the PR as closing the YouTrack issue, or `YTP {link}` with `PD` to mark it as part of the YouTrack issue.
 
 ## Procedure
@@ -42,6 +43,7 @@ Use this skill when the user sends `C`, `CP`, `P`, `G`, `GP`, `IMP`, `WN`, `PD`,
 13. For `GP`, follow the [generate-plan prompt](../../../.github/prompts/generate-plan.prompt.md) and create or refine the plan file under `.agents/plans/`.
 14. For `IMP`, follow the incremental implementation workflow for the specified plan or implementation file and run its verification step.
 15. For `WN`, inspect the current plan, identify the next incomplete implementation phase, and report it without modifying files.
+16. For `SLC`, run `git log origin/HEAD..HEAD --oneline` (or `git log --oneline -20` when no upstream exists) and `git diff origin/HEAD` to collect the changes, then produce a concise summary grouped by theme. Do not commit, push, or modify files.
 
 ### Pull Request Description (`PD`)
 
