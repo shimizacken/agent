@@ -130,6 +130,19 @@ const copySkill = (srcBase: string, destBase: string, skill: string): void => {
   );
 };
 
+const copyCopilotDirectory = (
+  srcGithub: string,
+  cwd: string,
+  directory: "instructions" | "prompts",
+): void => {
+  const source = path.join(srcGithub, directory);
+  const destination = path.join(cwd, ".github", directory);
+
+  fs.cpSync(source, destination, { recursive: true });
+
+  console.log(`  wrote  ${path.relative(process.cwd(), destination)}/`);
+};
+
 // --- interactive TTY agent selector ---
 
 const ttySelectAgents = (): Promise<Agent[]> => {
@@ -206,7 +219,8 @@ const ttySelectAgents = (): Promise<Agent[]> => {
 
         renderList();
       } else if (key === "\r") {
-        const result: Agent[] = selected.size > 0 ? [...selected] : [options[cursor].value];
+        const result: Agent[] =
+          selected.size > 0 ? [...selected] : [options[cursor].value];
 
         cleanup(result);
         resolve(result);
@@ -284,6 +298,11 @@ const main = async (): Promise<void> => {
     const dest = skillsDir(agent, cwd);
 
     selectedSkills.forEach((skill) => copySkill(srcSkillsBase, dest, skill));
+
+    if (agent === "copilot") {
+      copyCopilotDirectory(srcGithub, cwd, "instructions");
+      copyCopilotDirectory(srcGithub, cwd, "prompts");
+    }
   });
 
   copyInstructions(

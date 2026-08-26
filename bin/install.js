@@ -96,6 +96,12 @@ const copySkill = (srcBase, destBase, skill) => {
     });
     console.log(`  wrote  ${path_1.default.relative(process.cwd(), path_1.default.join(destBase, skill))}/`);
 };
+const copyCopilotDirectory = (srcGithub, cwd, directory) => {
+    const source = path_1.default.join(srcGithub, directory);
+    const destination = path_1.default.join(cwd, ".github", directory);
+    fs_1.default.cpSync(source, destination, { recursive: true });
+    console.log(`  wrote  ${path_1.default.relative(process.cwd(), destination)}/`);
+};
 // --- interactive TTY agent selector ---
 const ttySelectAgents = () => {
     const options = [
@@ -210,6 +216,10 @@ const main = async () => {
         copyInstructions(instructionsSrc(agent, srcGithub), instructionsDest(agent, cwd));
         const dest = skillsDir(agent, cwd);
         selectedSkills.forEach((skill) => copySkill(srcSkillsBase, dest, skill));
+        if (agent === "copilot") {
+            copyCopilotDirectory(srcGithub, cwd, "instructions");
+            copyCopilotDirectory(srcGithub, cwd, "prompts");
+        }
     });
     copyInstructions(path_1.default.join(__dirname, "..", "AGENT.md"), path_1.default.join(cwd, "AGENT.md"));
     const totalItems = agents.length * (1 + selectedSkills.length) + 1;

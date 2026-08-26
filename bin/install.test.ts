@@ -47,6 +47,24 @@ describe("install script", () => {
     assert.ok(fs.existsSync(target), `expected ${target} to exist`);
   });
 
+  it("copies Copilot prompts and instructions", () => {
+    assert.ok(
+      fs.existsSync(
+        path.join(tmpDir, ".github", "prompts", "generate-plan.prompt.md"),
+      ),
+    );
+    assert.ok(
+      fs.existsSync(
+        path.join(
+          tmpDir,
+          ".github",
+          "instructions",
+          "react-component-layers.instructions.md",
+        ),
+      ),
+    );
+  });
+
   it("copies AGENT.md to project root", () => {
     const target = path.join(tmpDir, "AGENT.md");
 

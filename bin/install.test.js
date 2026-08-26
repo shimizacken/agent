@@ -34,6 +34,10 @@ const run = (input, tmpDir) => (0, node_child_process_1.spawnSync)("node", [node
         const target = node_path_1.default.join(tmpDir, ".github", "skills", "conventional-commits", "SKILL.md");
         strict_1.default.ok(node_fs_1.default.existsSync(target), `expected ${target} to exist`);
     });
+    (0, node_test_1.it)("copies Copilot prompts and instructions", () => {
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(tmpDir, ".github", "prompts", "generate-plan.prompt.md")));
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(tmpDir, ".github", "instructions", "react-component-layers.instructions.md")));
+    });
     (0, node_test_1.it)("copies AGENT.md to project root", () => {
         const target = node_path_1.default.join(tmpDir, "AGENT.md");
         strict_1.default.ok(node_fs_1.default.existsSync(target), `expected ${target} to exist`);
