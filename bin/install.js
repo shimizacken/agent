@@ -194,7 +194,7 @@ const promptSkills = async (prompter, skills) => {
 // --- main ---
 const main = async () => {
     const srcGithub = path_1.default.join(__dirname, "..", ".github");
-    const srcSkillsBase = path_1.default.join(srcGithub, "skills");
+    const srcSkillsBase = path_1.default.join(__dirname, "..", ".agent", "skills");
     const cwd = process.cwd();
     const allSkills = listSkills(srcSkillsBase);
     let agents;

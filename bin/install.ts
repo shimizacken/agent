@@ -268,7 +268,7 @@ const promptSkills = async (
 
 const main = async (): Promise<void> => {
   const srcGithub = path.join(__dirname, "..", ".github");
-  const srcSkillsBase = path.join(srcGithub, "skills");
+  const srcSkillsBase = path.join(__dirname, "..", ".agent", "skills");
   const cwd = process.cwd();
   const allSkills = listSkills(srcSkillsBase);
 

@@ -9,7 +9,7 @@
     "bin/",
     "AGENT.md",
     ".github/copilot-instructions.md",
-    ".github/skills/",
+    ".agent/",
     ".github/prompts/",
     ".github/instructions/",
     ".github/agent-instructions/"
