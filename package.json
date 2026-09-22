@@ -7,6 +7,7 @@
   },
   "files": [
     "bin/",
+    "src/",
     "AGENT.md",
     "skills/",
     "prompts/",
@@ -20,7 +21,7 @@
   "scripts": {
     "build": "tsc",
     "prepare": "tsc",
-    "test": "tsc && node --test bin/install.test.js"
+    "test": "tsc && node --test bin/install.test.js \"src/**/*.test.js\""
   },
   "license": "MIT",
   "devDependencies": {
