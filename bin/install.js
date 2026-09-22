@@ -276,6 +276,7 @@ const ttySelectSkillsAndPrompts = (allSkills, allPrompts, existingSkills, existi
         ]);
     let cursorIdx = 0;
     let lineCount = 0;
+    let updateAllChecked = false;
     const { stdin, stdout } = process;
     const renderList = () => {
         if (lineCount > 0) {
@@ -297,10 +298,7 @@ const ttySelectSkillsAndPrompts = (allSkills, allPrompts, existingSkills, existi
                 const isSelectAll = item.kind === "selectAll";
                 const isUpdateAll = item.kind === "updateAll";
                 const isSelected = isUpdateAll
-                    ? [
-                        ...item.skills.map((skill) => selectionKey("skill", skill)),
-                        ...item.prompts.map((prompt) => selectionKey("prompt", prompt)),
-                    ].every((key) => selected.has(key))
+                    ? updateAllChecked
                     : isSelectAll
                         ? item.values.every((value) => selected.has(selectionKey(item.type, value)))
                         : selected.has(selectionKey(item.type, item.value));
@@ -361,13 +359,13 @@ const ttySelectSkillsAndPrompts = (allSkills, allPrompts, existingSkills, existi
                         ...item.skills.map((skill) => selectionKey("skill", skill)),
                         ...item.prompts.map((prompt) => selectionKey("prompt", prompt)),
                     ];
-                    const isSelected = keys.every((key) => selected.has(key));
+                    updateAllChecked = !updateAllChecked;
                     keys.forEach((key) => {
-                        if (isSelected) {
-                            selected.delete(key);
+                        if (updateAllChecked) {
+                            selected.add(key);
                         }
                         else {
-                            selected.add(key);
+                            selected.delete(key);
                         }
                     });
                     renderList();
