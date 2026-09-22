@@ -1,7 +1,7 @@
 import path from "path";
 
-import { AGENTS } from "../cli.types";
-import type { Agent } from "../cli.types";
+import { AGENTS } from "../types/cli.type";
+import type { Agent } from "../types/cli.type";
 
 export const parseAgentsInput = (raw: string): Agent[] => {
   const input = raw.trim().toLowerCase();

@@ -7,9 +7,9 @@ exports.main = void 0;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const readline_1 = __importDefault(require("readline"));
-const cli_types_1 = require("./cli.types");
+const cli_type_1 = require("./types/cli.type");
 const agent_utils_1 = require("./utils/agent.utils");
-const skill_category_utils_1 = require("./utils/skill-category.utils");
+const skillCategory_utils_1 = require("./utils/skillCategory.utils");
 const prompt_utils_1 = require("./utils/prompt.utils");
 const manifest_utils_1 = require("./utils/manifest.utils");
 const selection_utils_1 = require("./utils/selection.utils");
@@ -151,8 +151,8 @@ const promptAgent = async (prompter) => {
     return (0, agent_utils_1.parseAgentsInput)(raw);
 };
 const promptSkills = async (prompter, skills) => {
-    const nonCode = skills.filter((s) => skill_category_utils_1.NON_CODE_SKILLS.has(s));
-    const code = skills.filter((s) => !skill_category_utils_1.NON_CODE_SKILLS.has(s));
+    const nonCode = skills.filter((s) => skillCategory_utils_1.NON_CODE_SKILLS.has(s));
+    const code = skills.filter((s) => !skillCategory_utils_1.NON_CODE_SKILLS.has(s));
     const nonCodeAnswer = await prompter.ask(`Install ${nonCode.length} non-code skills? [Y/n]: `);
     const codeAnswer = await prompter.ask(`Install ${code.length} code skills? [y/N]: `);
     return [
@@ -172,7 +172,7 @@ const promptPrompts = async (prompter, prompts) => {
 };
 // --- interactive TTY skill selector ---
 const ttySelectSkillsAndPrompts = (allSkills, allPrompts, existingSkills, existingPrompts) => {
-    const { nonCode, coreCode, react, vue, angular } = (0, skill_category_utils_1.categorizeSkills)(allSkills);
+    const { nonCode, coreCode, react, vue, angular } = (0, skillCategory_utils_1.categorizeSkills)(allSkills);
     const sectionItems = (label, type, values) => values.length > 0
         ? [
             { kind: "header", label },
@@ -351,7 +351,7 @@ const ttySelectSkillsAndPrompts = (allSkills, allPrompts, existingSkills, existi
     });
 };
 // --- existing installation detection ---
-const detectInstalledAgents = (cwd) => cli_types_1.AGENTS.filter((agent) => fs_1.default.existsSync((0, agent_utils_1.getInstructionsDestPath)(agent, cwd)));
+const detectInstalledAgents = (cwd) => cli_type_1.AGENTS.filter((agent) => fs_1.default.existsSync((0, agent_utils_1.getInstructionsDestPath)(agent, cwd)));
 const detectInstalledSkills = (agent, cwd) => {
     const dir = (0, agent_utils_1.getSkillsDirPath)(agent, cwd);
     if (!fs_1.default.existsSync(dir)) {

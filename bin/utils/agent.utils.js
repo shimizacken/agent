@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getSkillsDirPath = exports.getInstructionsDestPath = exports.getInstructionsSrcPath = exports.parseAgentsInput = void 0;
 const path_1 = __importDefault(require("path"));
-const cli_types_1 = require("../cli.types");
+const cli_type_1 = require("../types/cli.type");
 const parseAgentsInput = (raw) => {
     const input = raw.trim().toLowerCase();
     if (!input) {
@@ -13,7 +13,7 @@ const parseAgentsInput = (raw) => {
     }
     const matched = input
         .split(",")
-        .map((s) => cli_types_1.AGENTS.find((a) => a.startsWith(s.trim())))
+        .map((s) => cli_type_1.AGENTS.find((a) => a.startsWith(s.trim())))
         .filter((a) => a !== undefined);
     return matched.length > 0 ? matched : ["copilot"];
 };

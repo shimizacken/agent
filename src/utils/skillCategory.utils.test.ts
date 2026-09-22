@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { categorizeSkills, NON_CODE_SKILLS } from "./skill-category.utils";
+import { categorizeSkills, NON_CODE_SKILLS } from "./skillCategory.utils";
 
 describe("categorizeSkills", () => {
   it("groups skills into their matching category", () => {

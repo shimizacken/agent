@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import path from "path";
 
-import type { ManifestEntry } from "../cli.types";
+import type { ManifestEntry } from "../types/cli.type";
 
 export const MANIFEST_FILE = ".agent-manifest.json";
 export const MANIFEST_SOURCE = "shimizacken/agent";

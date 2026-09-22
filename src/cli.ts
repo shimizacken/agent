@@ -2,24 +2,21 @@ import fs from "fs";
 import path from "path";
 import readline from "readline";
 
-import { AGENTS } from "./cli.types";
+import { AGENTS } from "./types/cli.type";
 import type {
   Agent,
   Manifest,
   ManifestEntry,
   Prompter,
   ExistingSelection,
-} from "./cli.types";
+} from "./types/cli.type";
 import {
   parseAgentsInput,
   getInstructionsSrcPath,
   getInstructionsDestPath,
   getSkillsDirPath,
 } from "./utils/agent.utils";
-import {
-  NON_CODE_SKILLS,
-  categorizeSkills,
-} from "./utils/skill-category.utils";
+import { NON_CODE_SKILLS, categorizeSkills } from "./utils/skillCategory.utils";
 import { getPromptLabel, parsePromptSelection } from "./utils/prompt.utils";
 import {
   MANIFEST_FILE,

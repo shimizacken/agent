@@ -19,9 +19,7 @@ const prompt_utils_1 = require("./prompt.utils");
         ]);
     });
     (0, vitest_1.it)("ignores out-of-range and non-numeric indices", () => {
-        (0, vitest_1.expect)((0, prompt_utils_1.parsePromptSelection)("0,4,foo,2", prompts)).toEqual([
-            "b.prompt.md",
-        ]);
+        (0, vitest_1.expect)((0, prompt_utils_1.parsePromptSelection)("0,4,foo,2", prompts)).toEqual(["b.prompt.md"]);
     });
     (0, vitest_1.it)("returns an empty array for empty input", () => {
         (0, vitest_1.expect)((0, prompt_utils_1.parsePromptSelection)("", prompts)).toEqual([]);
