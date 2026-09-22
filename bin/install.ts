@@ -11,7 +11,6 @@ const AGENTS = ["copilot", "claude", "codex"] as const;
 type Agent = (typeof AGENTS)[number];
 
 const NON_CODE_SKILLS = new Set([
-  "code-change",
   "conventional-commits",
   "git-commits",
   "incremental-implementation",
@@ -346,9 +345,7 @@ const ttySelectSkillsAndPrompts = (
       ? [
           { kind: "header", label },
           { kind: "selectAll", type, values },
-          ...values.map(
-            (value): Item => ({ kind: "option", type, value }),
-          ),
+          ...values.map((value): Item => ({ kind: "option", type, value })),
         ]
       : [{ kind: "header", label }];
 
@@ -479,6 +476,8 @@ const ttySelectSkillsAndPrompts = (
               selected.add(key);
             }
           });
+
+          renderList();
         } else if (item.kind === "option") {
           const key = selectionKey(item.type, item.value);
 

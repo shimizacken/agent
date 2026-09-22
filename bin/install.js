@@ -10,7 +10,6 @@ const readline_1 = __importDefault(require("readline"));
 // --- pure helpers ---
 const AGENTS = ["copilot", "claude", "codex"];
 const NON_CODE_SKILLS = new Set([
-    "code-change",
     "conventional-commits",
     "git-commits",
     "incremental-implementation",
@@ -341,6 +340,7 @@ const ttySelectSkillsAndPrompts = (allSkills, allPrompts) => {
                             selected.add(key);
                         }
                     });
+                    renderList();
                 }
                 else if (item.kind === "option") {
                     const key = selectionKey(item.type, item.value);
