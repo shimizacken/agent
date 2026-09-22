@@ -3,10 +3,12 @@
     "target": "ES2020",
     "module": "CommonJS",
     "moduleResolution": "bundler",
+    "rootDir": "src",
+    "outDir": "bin",
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "types": ["node"]
   },
-  "include": ["bin/**/*.ts", "src/**/*.ts"]
+  "include": ["src/**/*.ts"]
 }
