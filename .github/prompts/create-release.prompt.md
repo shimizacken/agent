@@ -1,0 +1,1 @@
+../../prompts/create-release.prompt.md
