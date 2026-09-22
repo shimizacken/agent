@@ -24,7 +24,7 @@ describe("install script", () => {
   });
 
   it("exits with code 0 (default copilot)", () => {
-    const result = run("\n\n\n", tmpDir);
+    const result = run("\n\n\n\n", tmpDir);
 
     assert.equal(result.status, 0);
   });
@@ -69,6 +69,37 @@ describe("install script", () => {
     const target = path.join(tmpDir, "AGENT.md");
 
     assert.ok(fs.existsSync(target), `expected ${target} to exist`);
+  });
+});
+
+describe("install script - prompt cherry-pick", () => {
+  let tmpDir: string;
+
+  before(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "copilot-setup-prompts-"));
+  });
+
+  after(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("exits with code 0", () => {
+    const result = run("\n\n\nn\n1\n", tmpDir);
+
+    assert.equal(result.status, 0);
+  });
+
+  it("copies only the selected prompt", () => {
+    assert.ok(
+      fs.existsSync(
+        path.join(tmpDir, ".github", "prompts", "generate-plan.prompt.md"),
+      ),
+    );
+    assert.ok(
+      !fs.existsSync(
+        path.join(tmpDir, ".github", "prompts", "pr-description.prompt.md"),
+      ),
+    );
   });
 });
 
@@ -120,7 +151,7 @@ describe("install script - multiple agents", () => {
   });
 
   it("exits with code 0", () => {
-    const result = run("copilot,claude\n\n\n", tmpDir);
+    const result = run("copilot,claude\n\n\n\n", tmpDir);
 
     assert.equal(result.status, 0);
   });

@@ -59,6 +59,11 @@ const listSkills = (srcBase) => fs_1.default
     .readdirSync(srcBase, { withFileTypes: true })
     .filter((e) => e.isDirectory())
     .map((e) => e.name);
+const listPromptFiles = (srcRoot) => fs_1.default
+    .readdirSync(path_1.default.join(srcRoot, "prompts"), { withFileTypes: true })
+    .filter((e) => e.isFile())
+    .map((e) => e.name);
+const promptLabel = (file) => file.replace(/\.prompt\.md$/, "");
 const parseSkillSelection = (raw, skills) => {
     const indices = raw
         .split(",")
@@ -109,6 +114,12 @@ const copyCopilotDirectory = (srcRoot, cwd, directory) => {
     const destination = path_1.default.join(cwd, ".github", directory);
     fs_1.default.cpSync(source, destination, { recursive: true });
     console.log(`  wrote  ${path_1.default.relative(process.cwd(), destination)}/`);
+};
+const copyPromptFile = (srcRoot, cwd, file) => {
+    const destination = path_1.default.join(cwd, ".github", "prompts", file);
+    fs_1.default.mkdirSync(path_1.default.dirname(destination), { recursive: true });
+    fs_1.default.copyFileSync(path_1.default.join(srcRoot, "prompts", file), destination);
+    console.log(`  wrote  ${path_1.default.relative(process.cwd(), destination)}`);
 };
 // --- interactive TTY agent selector ---
 const ttySelectAgents = () => {
@@ -198,6 +209,16 @@ const promptSkills = async (prompter, skills) => {
         ...(nonCodeAnswer.trim().toLowerCase() !== "n" ? nonCode : []),
         ...(codeAnswer.trim().toLowerCase() === "y" ? code : []),
     ];
+};
+const promptPrompts = async (prompter, prompts) => {
+    const allAnswer = await prompter.ask(`Install all ${prompts.length} prompts? [Y/n]: `);
+    if (allAnswer.trim().toLowerCase() !== "n") {
+        return prompts;
+    }
+    console.log("\nAvailable prompts:");
+    prompts.forEach((p, i) => console.log(`  ${i + 1}) ${promptLabel(p)}`));
+    const selection = await prompter.ask("\nEnter numbers to install (e.g. 1,3): ");
+    return parseSkillSelection(selection, prompts);
 };
 // --- interactive TTY skill selector ---
 const ttySelectSkills = (allSkills) => {
@@ -296,6 +317,76 @@ const ttySelectSkills = (allSkills) => {
         stdin.on("data", onData);
     });
 };
+// --- interactive TTY prompt selector ---
+const ttySelectPrompts = (allPrompts) => {
+    const selected = new Set(allPrompts);
+    let cursor = 0;
+    let lineCount = 0;
+    const { stdin, stdout } = process;
+    const renderList = () => {
+        if (lineCount > 0) {
+            stdout.write(`\x1b[${lineCount}A\x1b[0J`);
+        }
+        const lines = [
+            "  Select prompts  \x1b[2m(\u2191\u2193 navigate \u00b7 space toggle \u00b7 enter confirm)\x1b[0m",
+            ...allPrompts.map((p, i) => {
+                const pointer = i === cursor ? "\x1b[36m>\x1b[0m" : " ";
+                const check = selected.has(p) ? "\x1b[32m\u25cf\x1b[0m" : "\u25cb";
+                return `  ${pointer} ${check}  ${promptLabel(p)}`;
+            }),
+        ];
+        stdout.write(lines.join("\n") + "\n");
+        lineCount = lines.length;
+    };
+    stdout.write("\x1b[?25l");
+    stdin.setRawMode(true);
+    stdin.resume();
+    renderList();
+    return new Promise((resolve) => {
+        const cleanup = (result) => {
+            stdin.removeListener("data", onData);
+            stdin.setRawMode(false);
+            stdin.pause();
+            stdout.write("\x1b[?25h");
+            if (lineCount > 0) {
+                stdout.write(`\x1b[${lineCount}A\x1b[0J`);
+            }
+            const label = result.length > 0 ? result.map(promptLabel).join(", ") : "none";
+            stdout.write(`  prompts: ${label}\n`);
+        };
+        const onData = (chunk) => {
+            const key = chunk.toString();
+            if (key === "\x03") {
+                cleanup([]);
+                process.exit(130);
+            }
+            else if (key === "\x1b[A") {
+                cursor = (cursor - 1 + allPrompts.length) % allPrompts.length;
+                renderList();
+            }
+            else if (key === "\x1b[B") {
+                cursor = (cursor + 1) % allPrompts.length;
+                renderList();
+            }
+            else if (key === " ") {
+                const val = allPrompts[cursor];
+                if (selected.has(val)) {
+                    selected.delete(val);
+                }
+                else {
+                    selected.add(val);
+                }
+                renderList();
+            }
+            else if (key === "\r") {
+                const result = [...selected];
+                cleanup(result);
+                resolve(result);
+            }
+        };
+        stdin.on("data", onData);
+    });
+};
 // --- update helpers ---
 const detectInstalledAgents = (cwd) => AGENTS.filter((agent) => fs_1.default.existsSync(instructionsDest(agent, cwd)));
 const detectInstalledSkills = (agent, cwd) => {
@@ -370,7 +461,7 @@ const ttySelectMode = () => {
     });
 };
 // --- main ---
-const runInstall = (agents, selectedSkills, srcRoot, srcGithub, srcSkillsBase, cwd) => {
+const runInstall = (agents, selectedSkills, selectedPrompts, srcRoot, srcGithub, srcSkillsBase, cwd) => {
     console.log("");
     agents.forEach((agent) => {
         copyInstructions(instructionsSrc(agent, srcGithub), instructionsDest(agent, cwd));
@@ -378,11 +469,12 @@ const runInstall = (agents, selectedSkills, srcRoot, srcGithub, srcSkillsBase, c
         selectedSkills.forEach((skill) => copySkill(srcSkillsBase, dest, skill));
         if (agent === "copilot") {
             copyCopilotDirectory(srcRoot, cwd, "instructions");
-            copyCopilotDirectory(srcRoot, cwd, "prompts");
+            selectedPrompts.forEach((file) => copyPromptFile(srcRoot, cwd, file));
         }
     });
     copyInstructions(path_1.default.join(__dirname, "..", "AGENT.md"), path_1.default.join(cwd, "AGENT.md"));
-    const totalItems = agents.length * (1 + selectedSkills.length) + 1;
+    const promptItems = agents.includes("copilot") ? selectedPrompts.length : 0;
+    const totalItems = agents.length * (1 + selectedSkills.length) + promptItems + 1;
     console.log(`\ndone - ${totalItems} item(s) installed for ${agents.join(", ")}`);
 };
 const runUpdate = (srcRoot, srcGithub, srcSkillsBase, cwd) => {
@@ -424,14 +516,20 @@ const main = async () => {
         }
         const agents = await ttySelectAgents();
         const selectedSkills = await ttySelectSkills(listSkills(srcSkillsBase));
-        runInstall(agents, selectedSkills, srcRoot, srcGithub, srcSkillsBase, cwd);
+        const selectedPrompts = agents.includes("copilot")
+            ? await ttySelectPrompts(listPromptFiles(srcRoot))
+            : [];
+        runInstall(agents, selectedSkills, selectedPrompts, srcRoot, srcGithub, srcSkillsBase, cwd);
     }
     else {
         const prompter = createPrompter();
         const agents = await promptAgent(prompter);
         const selectedSkills = await promptSkills(prompter, listSkills(srcSkillsBase));
+        const selectedPrompts = agents.includes("copilot")
+            ? await promptPrompts(prompter, listPromptFiles(srcRoot))
+            : [];
         prompter.close();
-        runInstall(agents, selectedSkills, srcRoot, srcGithub, srcSkillsBase, cwd);
+        runInstall(agents, selectedSkills, selectedPrompts, srcRoot, srcGithub, srcSkillsBase, cwd);
     }
 };
 main().catch((err) => {

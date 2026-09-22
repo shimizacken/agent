@@ -23,7 +23,7 @@ const run = (input, tmpDir) => (0, node_child_process_1.spawnSync)("node", [node
         node_fs_1.default.rmSync(tmpDir, { recursive: true, force: true });
     });
     (0, node_test_1.it)("exits with code 0 (default copilot)", () => {
-        const result = run("\n\n\n", tmpDir);
+        const result = run("\n\n\n\n", tmpDir);
         strict_1.default.equal(result.status, 0);
     });
     (0, node_test_1.it)("copies copilot-instructions.md for default agent", () => {
@@ -41,6 +41,23 @@ const run = (input, tmpDir) => (0, node_child_process_1.spawnSync)("node", [node
     (0, node_test_1.it)("copies AGENT.md to project root", () => {
         const target = node_path_1.default.join(tmpDir, "AGENT.md");
         strict_1.default.ok(node_fs_1.default.existsSync(target), `expected ${target} to exist`);
+    });
+});
+(0, node_test_1.describe)("install script - prompt cherry-pick", () => {
+    let tmpDir;
+    (0, node_test_1.before)(() => {
+        tmpDir = node_fs_1.default.mkdtempSync(node_path_1.default.join(node_os_1.default.tmpdir(), "copilot-setup-prompts-"));
+    });
+    (0, node_test_1.after)(() => {
+        node_fs_1.default.rmSync(tmpDir, { recursive: true, force: true });
+    });
+    (0, node_test_1.it)("exits with code 0", () => {
+        const result = run("\n\n\nn\n1\n", tmpDir);
+        strict_1.default.equal(result.status, 0);
+    });
+    (0, node_test_1.it)("copies only the selected prompt", () => {
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(tmpDir, ".github", "prompts", "generate-plan.prompt.md")));
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(tmpDir, ".github", "prompts", "pr-description.prompt.md")));
     });
 });
 (0, node_test_1.describe)("install script - claude agent", () => {
@@ -73,7 +90,7 @@ const run = (input, tmpDir) => (0, node_child_process_1.spawnSync)("node", [node
         node_fs_1.default.rmSync(tmpDir, { recursive: true, force: true });
     });
     (0, node_test_1.it)("exits with code 0", () => {
-        const result = run("copilot,claude\n\n\n", tmpDir);
+        const result = run("copilot,claude\n\n\n\n", tmpDir);
         strict_1.default.equal(result.status, 0);
     });
     (0, node_test_1.it)("copies copilot-instructions.md", () => {
