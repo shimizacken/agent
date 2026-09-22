@@ -220,7 +220,7 @@ Use compact, enforceable conventions. If a target repo already has stronger loca
 | Util | camelCase | `*.utils.ts` | `entities.utils.ts` |
 | API module | camelCase | `*.api.ts` | `entities.api.ts` |
 | Service | camelCase | `*.service.ts` | `billing.service.ts` |
-| Types | camelCase | `*.types.ts` | `user.types.ts` |
+| Types | camelCase | `types/*.type.ts` | `types/user.type.ts` |
 
 #### React Files And Folders
 
@@ -287,8 +287,9 @@ const getNames = mapWith((user: { name: string }) => user.name);
 
 #### Types
 
-- use dedicated `*.types.ts` files for shared domain types when the types are reused
+- use dedicated `types/*.type.ts` files for shared domain types when the types are reused
 - keep types close to the domain they describe
+- use camelCase filenames; never kebab-case
 - prefer explicit names over generic names like `Data` or `Item`
 - separate external API shapes from internal domain shapes when they differ
 

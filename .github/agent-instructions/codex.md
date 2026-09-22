@@ -36,7 +36,8 @@ Replace these with your project's actual commands:
 - use `*.container.tsx` for stateful orchestration
 - use `*.view.tsx` for presentational components
 - use `*.utils.ts` for reusable stateless helpers
-- use `*.types.ts` for shared types
+- use `types/*.type.ts` for shared types
+- use camelCase for all `.ts`/`.js` filenames, never kebab-case
 - prefer arrow functions over `function` declarations
 
 ## Testing

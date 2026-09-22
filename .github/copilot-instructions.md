@@ -35,8 +35,9 @@ Use this file as the short, always-on instruction layer for a repository. It sho
 - use `*.container.tsx` for stateful orchestration
 - use `*.view.tsx` for presentational components
 - use `*.utils.ts` for reusable stateless helpers
-- use `*.types.ts` for shared types
+- use `types/*.type.ts` for shared types
 - use `*.service.ts` only when a real service abstraction is needed
+- use camelCase for all `.ts`/`.js` filenames, never kebab-case
 
 ## Testing
 
