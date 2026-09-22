@@ -221,7 +221,7 @@ const promptPrompts = async (prompter, prompts) => {
     return parseSkillSelection(selection, prompts);
 };
 // --- interactive TTY skill selector ---
-const ttySelectSkills = (allSkills) => {
+const ttySelectSkillsAndPrompts = (allSkills, allPrompts) => {
     const nonCode = allSkills.filter((s) => NON_CODE_SKILLS.has(s));
     const react = allSkills.filter((s) => s.startsWith("react-"));
     const vue = allSkills.filter((s) => s.startsWith("vue-"));
@@ -230,25 +230,32 @@ const ttySelectSkills = (allSkills) => {
         !react.includes(s) &&
         !vue.includes(s) &&
         !angular.includes(s));
+    const sectionItems = (label, type, values) => values.length > 0
+        ? [
+            { kind: "header", label },
+            { kind: "selectAll", type, values },
+            ...values.map((value) => ({ kind: "option", type, value })),
+        ]
+        : [{ kind: "header", label }];
     const items = [
-        { kind: "header", label: "Code conventions" },
-        ...nonCode.map((s) => ({ kind: "option", value: s })),
-        { kind: "header", label: "Core code" },
-        ...coreCode.map((s) => ({ kind: "option", value: s })),
-        { kind: "header", label: "React" },
-        ...react.map((s) => ({ kind: "option", value: s })),
-        { kind: "header", label: "Vue.js" },
-        ...vue.map((s) => ({ kind: "option", value: s })),
-        { kind: "header", label: "Angular" },
-        ...angular.map((s) => ({ kind: "option", value: s })),
+        ...sectionItems("Code conventions", "skill", nonCode),
+        ...sectionItems("Core code", "skill", coreCode),
+        ...sectionItems("React", "skill", react),
+        ...sectionItems("Vue.js", "skill", vue),
+        ...sectionItems("Angular", "skill", angular),
+        ...sectionItems("Prompts", "prompt", allPrompts),
     ];
     const optionIndices = items.reduce((acc, item, i) => {
-        if (item.kind === "option") {
+        if (item.kind !== "header") {
             acc.push(i);
         }
         return acc;
     }, []);
-    const selected = new Set(nonCode);
+    const selectionKey = (type, value) => `${type}:${value}`;
+    const selected = new Set([
+        ...nonCode.map((skill) => selectionKey("skill", skill)),
+        ...allPrompts.map((prompt) => selectionKey("prompt", prompt)),
+    ]);
     let cursorIdx = 0;
     let lineCount = 0;
     const { stdin, stdout } = process;
@@ -257,7 +264,7 @@ const ttySelectSkills = (allSkills) => {
             stdout.write(`\x1b[${lineCount}A\x1b[0J`);
         }
         const lines = [
-            "  Select skills  \x1b[2m(\u2191\u2193 navigate \u00b7 space toggle \u00b7 enter confirm)\x1b[0m",
+            "  Select skills and prompts  \x1b[2m(\u2191\u2193 navigate \u00b7 space toggle \u00b7 enter confirm)\x1b[0m",
         ];
         const cursorItemIdx = optionIndices[cursorIdx];
         items.forEach((item, i) => {
@@ -269,10 +276,18 @@ const ttySelectSkills = (allSkills) => {
             }
             else {
                 const isCursor = i === cursorItemIdx;
-                const isSelected = selected.has(item.value);
+                const isSelectAll = item.kind === "selectAll";
+                const isSelected = isSelectAll
+                    ? item.values.every((value) => selected.has(selectionKey(item.type, value)))
+                    : selected.has(selectionKey(item.type, item.value));
+                const label = isSelectAll
+                    ? "Select all"
+                    : item.type === "prompt"
+                        ? promptLabel(item.value)
+                        : item.value;
                 const pointer = isCursor ? "\x1b[36m>\x1b[0m" : " ";
                 const check = isSelected ? "\x1b[32m\u25cf\x1b[0m" : "\u25cb";
-                lines.push(`  ${pointer} ${check}  ${item.value}`);
+                lines.push(`  ${pointer} ${check}  ${label}`);
             }
         });
         stdout.write(lines.join("\n") + "\n");
@@ -291,13 +306,17 @@ const ttySelectSkills = (allSkills) => {
             if (lineCount > 0) {
                 stdout.write(`\x1b[${lineCount}A\x1b[0J`);
             }
-            const label = result.length > 0 ? result.join(", ") : "none";
-            stdout.write(`  skills: ${label}\n`);
+            const skillLabel = result.skills.length > 0 ? result.skills.join(", ") : "none";
+            const promptLabelText = result.prompts.length > 0
+                ? result.prompts.map(promptLabel).join(", ")
+                : "none";
+            stdout.write(`  skills: ${skillLabel}\n`);
+            stdout.write(`  prompts: ${promptLabelText}\n`);
         };
         const onData = (chunk) => {
             const key = chunk.toString();
             if (key === "\x03") {
-                cleanup([]);
+                cleanup({ skills: [], prompts: [] });
                 process.exit(130);
             }
             else if (key === "\x1b[A") {
@@ -311,88 +330,39 @@ const ttySelectSkills = (allSkills) => {
             }
             else if (key === " ") {
                 const item = items[optionIndices[cursorIdx]];
-                if (item.kind === "option") {
-                    if (selected.has(item.value)) {
-                        selected.delete(item.value);
+                if (item.kind === "selectAll") {
+                    const isSelected = item.values.every((value) => selected.has(selectionKey(item.type, value)));
+                    item.values.forEach((value) => {
+                        const key = selectionKey(item.type, value);
+                        if (isSelected) {
+                            selected.delete(key);
+                        }
+                        else {
+                            selected.add(key);
+                        }
+                    });
+                }
+                else if (item.kind === "option") {
+                    const key = selectionKey(item.type, item.value);
+                    if (selected.has(key)) {
+                        selected.delete(key);
                     }
                     else {
-                        selected.add(item.value);
+                        selected.add(key);
                     }
                     renderList();
                 }
             }
             else if (key === "\r") {
-                const result = [...selected];
-                cleanup(result);
-                resolve(result);
-            }
-        };
-        stdin.on("data", onData);
-    });
-};
-// --- interactive TTY prompt selector ---
-const ttySelectPrompts = (allPrompts) => {
-    const selected = new Set(allPrompts);
-    let cursor = 0;
-    let lineCount = 0;
-    const { stdin, stdout } = process;
-    const renderList = () => {
-        if (lineCount > 0) {
-            stdout.write(`\x1b[${lineCount}A\x1b[0J`);
-        }
-        const lines = [
-            "  Select prompts  \x1b[2m(\u2191\u2193 navigate \u00b7 space toggle \u00b7 enter confirm)\x1b[0m",
-            ...allPrompts.map((p, i) => {
-                const pointer = i === cursor ? "\x1b[36m>\x1b[0m" : " ";
-                const check = selected.has(p) ? "\x1b[32m\u25cf\x1b[0m" : "\u25cb";
-                return `  ${pointer} ${check}  ${promptLabel(p)}`;
-            }),
-        ];
-        stdout.write(lines.join("\n") + "\n");
-        lineCount = lines.length;
-    };
-    stdout.write("\x1b[?25l");
-    stdin.setRawMode(true);
-    stdin.resume();
-    renderList();
-    return new Promise((resolve) => {
-        const cleanup = (result) => {
-            stdin.removeListener("data", onData);
-            stdin.setRawMode(false);
-            stdin.pause();
-            stdout.write("\x1b[?25h");
-            if (lineCount > 0) {
-                stdout.write(`\x1b[${lineCount}A\x1b[0J`);
-            }
-            const label = result.length > 0 ? result.map(promptLabel).join(", ") : "none";
-            stdout.write(`  prompts: ${label}\n`);
-        };
-        const onData = (chunk) => {
-            const key = chunk.toString();
-            if (key === "\x03") {
-                cleanup([]);
-                process.exit(130);
-            }
-            else if (key === "\x1b[A") {
-                cursor = (cursor - 1 + allPrompts.length) % allPrompts.length;
-                renderList();
-            }
-            else if (key === "\x1b[B") {
-                cursor = (cursor + 1) % allPrompts.length;
-                renderList();
-            }
-            else if (key === " ") {
-                const val = allPrompts[cursor];
-                if (selected.has(val)) {
-                    selected.delete(val);
-                }
-                else {
-                    selected.add(val);
-                }
-                renderList();
-            }
-            else if (key === "\r") {
-                const result = [...selected];
+                const result = items.reduce((selection, item) => {
+                    if (item.kind === "option") {
+                        const key = selectionKey(item.type, item.value);
+                        if (selected.has(key)) {
+                            selection[item.type === "skill" ? "skills" : "prompts"].push(item.value);
+                        }
+                    }
+                    return selection;
+                }, { skills: [], prompts: [] });
                 cleanup(result);
                 resolve(result);
             }
@@ -528,11 +498,8 @@ const main = async () => {
             return;
         }
         const agents = await ttySelectAgents();
-        const selectedSkills = await ttySelectSkills(listSkills(srcSkillsBase));
-        const selectedPrompts = agents.includes("copilot")
-            ? await ttySelectPrompts(listPromptFiles(srcRoot))
-            : [];
-        runInstall(agents, selectedSkills, selectedPrompts, srcRoot, srcGithub, srcSkillsBase, cwd);
+        const selection = await ttySelectSkillsAndPrompts(listSkills(srcSkillsBase), agents.includes("copilot") ? listPromptFiles(srcRoot) : []);
+        runInstall(agents, selection.skills, selection.prompts, srcRoot, srcGithub, srcSkillsBase, cwd);
     }
     else {
         const prompter = createPrompter();
