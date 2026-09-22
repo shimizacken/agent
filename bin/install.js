@@ -223,12 +223,24 @@ const promptPrompts = async (prompter, prompts) => {
 // --- interactive TTY skill selector ---
 const ttySelectSkills = (allSkills) => {
     const nonCode = allSkills.filter((s) => NON_CODE_SKILLS.has(s));
-    const code = allSkills.filter((s) => !NON_CODE_SKILLS.has(s));
+    const react = allSkills.filter((s) => s.startsWith("react-"));
+    const vue = allSkills.filter((s) => s.startsWith("vue-"));
+    const angular = allSkills.filter((s) => s.startsWith("angular-"));
+    const coreCode = allSkills.filter((s) => !NON_CODE_SKILLS.has(s) &&
+        !react.includes(s) &&
+        !vue.includes(s) &&
+        !angular.includes(s));
     const items = [
-        { kind: "header", label: "Non-code" },
+        { kind: "header", label: "Code conventions" },
         ...nonCode.map((s) => ({ kind: "option", value: s })),
-        { kind: "header", label: "Code" },
-        ...code.map((s) => ({ kind: "option", value: s })),
+        { kind: "header", label: "Core code" },
+        ...coreCode.map((s) => ({ kind: "option", value: s })),
+        { kind: "header", label: "React" },
+        ...react.map((s) => ({ kind: "option", value: s })),
+        { kind: "header", label: "Vue.js" },
+        ...vue.map((s) => ({ kind: "option", value: s })),
+        { kind: "header", label: "Angular" },
+        ...angular.map((s) => ({ kind: "option", value: s })),
     ];
     const optionIndices = items.reduce((acc, item, i) => {
         if (item.kind === "option") {
@@ -289,7 +301,8 @@ const ttySelectSkills = (allSkills) => {
                 process.exit(130);
             }
             else if (key === "\x1b[A") {
-                cursorIdx = (cursorIdx - 1 + optionIndices.length) % optionIndices.length;
+                cursorIdx =
+                    (cursorIdx - 1 + optionIndices.length) % optionIndices.length;
                 renderList();
             }
             else if (key === "\x1b[B") {

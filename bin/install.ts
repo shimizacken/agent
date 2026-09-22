@@ -318,17 +318,34 @@ const ttySelectSkills = (allSkills: string[]): Promise<string[]> => {
     | { kind: "option"; value: string };
 
   const nonCode = allSkills.filter((s) => NON_CODE_SKILLS.has(s));
-  const code = allSkills.filter((s) => !NON_CODE_SKILLS.has(s));
+  const react = allSkills.filter((s) => s.startsWith("react-"));
+  const vue = allSkills.filter((s) => s.startsWith("vue-"));
+  const angular = allSkills.filter((s) => s.startsWith("angular-"));
+  const coreCode = allSkills.filter(
+    (s) =>
+      !NON_CODE_SKILLS.has(s) &&
+      !react.includes(s) &&
+      !vue.includes(s) &&
+      !angular.includes(s),
+  );
 
   const items: Item[] = [
-    { kind: "header", label: "Non-code" },
+    { kind: "header", label: "Code conventions" },
     ...nonCode.map((s): Item => ({ kind: "option", value: s })),
-    { kind: "header", label: "Code" },
-    ...code.map((s): Item => ({ kind: "option", value: s })),
+    { kind: "header", label: "Core code" },
+    ...coreCode.map((s): Item => ({ kind: "option", value: s })),
+    { kind: "header", label: "React" },
+    ...react.map((s): Item => ({ kind: "option", value: s })),
+    { kind: "header", label: "Vue.js" },
+    ...vue.map((s): Item => ({ kind: "option", value: s })),
+    { kind: "header", label: "Angular" },
+    ...angular.map((s): Item => ({ kind: "option", value: s })),
   ];
 
   const optionIndices = items.reduce<number[]>((acc, item, i) => {
-    if (item.kind === "option") { acc.push(i); }
+    if (item.kind === "option") {
+      acc.push(i);
+    }
 
     return acc;
   }, []);
@@ -340,7 +357,9 @@ const ttySelectSkills = (allSkills: string[]): Promise<string[]> => {
   const { stdin, stdout } = process;
 
   const renderList = () => {
-    if (lineCount > 0) { stdout.write(`\x1b[${lineCount}A\x1b[0J`); }
+    if (lineCount > 0) {
+      stdout.write(`\x1b[${lineCount}A\x1b[0J`);
+    }
 
     const lines = [
       "  Select skills  \x1b[2m(\u2191\u2193 navigate \u00b7 space toggle \u00b7 enter confirm)\x1b[0m",
@@ -350,7 +369,9 @@ const ttySelectSkills = (allSkills: string[]): Promise<string[]> => {
 
     items.forEach((item, i) => {
       if (item.kind === "header") {
-        if (i > 0) { lines.push(""); }
+        if (i > 0) {
+          lines.push("");
+        }
 
         lines.push(`  \x1b[2m${item.label}\x1b[0m`);
       } else {
@@ -379,7 +400,9 @@ const ttySelectSkills = (allSkills: string[]): Promise<string[]> => {
       stdin.pause();
       stdout.write("\x1b[?25h");
 
-      if (lineCount > 0) { stdout.write(`\x1b[${lineCount}A\x1b[0J`); }
+      if (lineCount > 0) {
+        stdout.write(`\x1b[${lineCount}A\x1b[0J`);
+      }
 
       const label = result.length > 0 ? result.join(", ") : "none";
 
@@ -393,7 +416,8 @@ const ttySelectSkills = (allSkills: string[]): Promise<string[]> => {
         cleanup([]);
         process.exit(130);
       } else if (key === "\x1b[A") {
-        cursorIdx = (cursorIdx - 1 + optionIndices.length) % optionIndices.length;
+        cursorIdx =
+          (cursorIdx - 1 + optionIndices.length) % optionIndices.length;
         renderList();
       } else if (key === "\x1b[B") {
         cursorIdx = (cursorIdx + 1) % optionIndices.length;
@@ -432,7 +456,9 @@ const ttySelectPrompts = (allPrompts: string[]): Promise<string[]> => {
   const { stdin, stdout } = process;
 
   const renderList = () => {
-    if (lineCount > 0) { stdout.write(`\x1b[${lineCount}A\x1b[0J`); }
+    if (lineCount > 0) {
+      stdout.write(`\x1b[${lineCount}A\x1b[0J`);
+    }
 
     const lines = [
       "  Select prompts  \x1b[2m(\u2191\u2193 navigate \u00b7 space toggle \u00b7 enter confirm)\x1b[0m",
@@ -460,9 +486,12 @@ const ttySelectPrompts = (allPrompts: string[]): Promise<string[]> => {
       stdin.pause();
       stdout.write("\x1b[?25h");
 
-      if (lineCount > 0) { stdout.write(`\x1b[${lineCount}A\x1b[0J`); }
+      if (lineCount > 0) {
+        stdout.write(`\x1b[${lineCount}A\x1b[0J`);
+      }
 
-      const label = result.length > 0 ? result.map(promptLabel).join(", ") : "none";
+      const label =
+        result.length > 0 ? result.map(promptLabel).join(", ") : "none";
 
       stdout.write(`  prompts: ${label}\n`);
     };
@@ -509,7 +538,9 @@ const detectInstalledAgents = (cwd: string): Agent[] =>
 const detectInstalledSkills = (agent: Agent, cwd: string): string[] => {
   const dir = skillsDir(agent, cwd);
 
-  if (!fs.existsSync(dir)) { return []; }
+  if (!fs.existsSync(dir)) {
+    return [];
+  }
 
   return fs
     .readdirSync(dir, { withFileTypes: true })
@@ -533,7 +564,9 @@ const ttySelectMode = (): Promise<"install" | "update"> => {
   const { stdin, stdout } = process;
 
   const renderList = () => {
-    if (lineCount > 0) { stdout.write(`\x1b[${lineCount}A\x1b[0J`); }
+    if (lineCount > 0) {
+      stdout.write(`\x1b[${lineCount}A\x1b[0J`);
+    }
 
     const lines = [
       "  Mode  \x1b[2m(\u2191\u2193 navigate \u00b7 enter confirm)\x1b[0m",
@@ -560,7 +593,9 @@ const ttySelectMode = (): Promise<"install" | "update"> => {
       stdin.pause();
       stdout.write("\x1b[?25h");
 
-      if (lineCount > 0) { stdout.write(`\x1b[${lineCount}A\x1b[0J`); }
+      if (lineCount > 0) {
+        stdout.write(`\x1b[${lineCount}A\x1b[0J`);
+      }
 
       stdout.write(`  mode: ${result}\n`);
     };
@@ -624,9 +659,12 @@ const runInstall = (
   );
 
   const promptItems = agents.includes("copilot") ? selectedPrompts.length : 0;
-  const totalItems = agents.length * (1 + selectedSkills.length) + promptItems + 1;
+  const totalItems =
+    agents.length * (1 + selectedSkills.length) + promptItems + 1;
 
-  console.log(`\ndone - ${totalItems} item(s) installed for ${agents.join(", ")}`);
+  console.log(
+    `\ndone - ${totalItems} item(s) installed for ${agents.join(", ")}`,
+  );
 };
 
 const runUpdate = (
@@ -647,7 +685,10 @@ const runUpdate = (
   console.log("");
 
   agents.forEach((agent) => {
-    copyInstructions(instructionsSrc(agent, srcGithub), instructionsDest(agent, cwd));
+    copyInstructions(
+      instructionsSrc(agent, srcGithub),
+      instructionsDest(agent, cwd),
+    );
 
     const dest = skillsDir(agent, cwd);
     const installed = detectInstalledSkills(agent, cwd);
@@ -705,7 +746,10 @@ const main = async (): Promise<void> => {
   } else {
     const prompter = createPrompter();
     const agents = await promptAgent(prompter);
-    const selectedSkills = await promptSkills(prompter, listSkills(srcSkillsBase));
+    const selectedSkills = await promptSkills(
+      prompter,
+      listSkills(srcSkillsBase),
+    );
     const selectedPrompts = agents.includes("copilot")
       ? await promptPrompts(prompter, listPromptFiles(srcRoot))
       : [];
