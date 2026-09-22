@@ -346,6 +346,7 @@ const ttySelectSkillsAndPrompts = (
         type: "skill" | "prompt";
         values: string[];
       }
+    | { kind: "updateAll"; skills: string[]; prompts: string[] }
     | { kind: "option"; type: "skill" | "prompt"; value: string };
 
   const nonCode = allSkills.filter((s) => NON_CODE_SKILLS.has(s));
@@ -373,7 +374,19 @@ const ttySelectSkillsAndPrompts = (
         ]
       : [{ kind: "header", label }];
 
+  const isUpdateMode =
+    existingSkills !== undefined || existingPrompts !== undefined;
+
   const items: Item[] = [
+    ...(isUpdateMode
+      ? [
+          {
+            kind: "updateAll",
+            skills: existingSkills ?? [],
+            prompts: existingPrompts ?? [],
+          } as Item,
+        ]
+      : []),
     ...sectionItems("Code conventions", "skill", nonCode),
     ...sectionItems("Core code", "skill", coreCode),
     ...sectionItems("React", "skill", react),
@@ -433,16 +446,24 @@ const ttySelectSkillsAndPrompts = (
       } else {
         const isCursor = i === cursorItemIdx;
         const isSelectAll = item.kind === "selectAll";
-        const isSelected = isSelectAll
-          ? item.values.every((value) =>
-              selected.has(selectionKey(item.type, value)),
-            )
-          : selected.has(selectionKey(item.type, item.value));
-        const label = isSelectAll
-          ? "Select all"
-          : item.type === "prompt"
-            ? promptLabel(item.value)
-            : item.value;
+        const isUpdateAll = item.kind === "updateAll";
+        const isSelected = isUpdateAll
+          ? [
+              ...item.skills.map((skill) => selectionKey("skill", skill)),
+              ...item.prompts.map((prompt) => selectionKey("prompt", prompt)),
+            ].every((key) => selected.has(key))
+          : isSelectAll
+            ? item.values.every((value) =>
+                selected.has(selectionKey(item.type, value)),
+              )
+            : selected.has(selectionKey(item.type, item.value));
+        const label = isUpdateAll
+          ? "Update all selected skills to latest version"
+          : isSelectAll
+            ? "Select all"
+            : item.type === "prompt"
+              ? promptLabel(item.value)
+              : item.value;
         const pointer = isCursor ? "\x1b[36m>\x1b[0m" : " ";
         const check = isSelected ? "\x1b[32m\u25cf\x1b[0m" : "\u25cb";
 
@@ -497,7 +518,23 @@ const ttySelectSkillsAndPrompts = (
       } else if (key === " ") {
         const item = items[optionIndices[cursorIdx]];
 
-        if (item.kind === "selectAll") {
+        if (item.kind === "updateAll") {
+          const keys = [
+            ...item.skills.map((skill) => selectionKey("skill", skill)),
+            ...item.prompts.map((prompt) => selectionKey("prompt", prompt)),
+          ];
+          const isSelected = keys.every((key) => selected.has(key));
+
+          keys.forEach((key) => {
+            if (isSelected) {
+              selected.delete(key);
+            } else {
+              selected.add(key);
+            }
+          });
+
+          renderList();
+        } else if (item.kind === "selectAll") {
           const isSelected = item.values.every((value) =>
             selected.has(selectionKey(item.type, value)),
           );
