@@ -16,6 +16,7 @@ const NON_CODE_SKILLS = new Set([
     "incremental-planning",
     "shortcuts",
 ]);
+const MANIFEST_FILE = ".agent-manifest.json";
 const parseAgentsInput = (raw) => {
     const input = raw.trim().toLowerCase();
     if (!input) {
@@ -121,14 +122,14 @@ const copyPromptFile = (srcRoot, cwd, file) => {
     console.log(`  wrote  ${path_1.default.relative(process.cwd(), destination)}`);
 };
 // --- interactive TTY agent selector ---
-const ttySelectAgents = () => {
+const ttySelectAgents = (preselected = []) => {
     const options = [
         { value: "copilot", label: "copilot (default)" },
         { value: "claude", label: "claude" },
         { value: "codex", label: "codex" },
     ];
-    const selected = new Set();
-    let cursor = 0;
+    const selected = new Set(preselected);
+    let cursor = Math.max(0, options.findIndex((opt) => preselected.includes(opt.value)));
     let lineCount = 0;
     const { stdin, stdout } = process;
     const renderList = () => {
@@ -220,7 +221,7 @@ const promptPrompts = async (prompter, prompts) => {
     return parseSkillSelection(selection, prompts);
 };
 // --- interactive TTY skill selector ---
-const ttySelectSkillsAndPrompts = (allSkills, allPrompts) => {
+const ttySelectSkillsAndPrompts = (allSkills, allPrompts, existingSkills, existingPrompts) => {
     const nonCode = allSkills.filter((s) => NON_CODE_SKILLS.has(s));
     const react = allSkills.filter((s) => s.startsWith("react-"));
     const vue = allSkills.filter((s) => s.startsWith("vue-"));
@@ -251,10 +252,15 @@ const ttySelectSkillsAndPrompts = (allSkills, allPrompts) => {
         return acc;
     }, []);
     const selectionKey = (type, value) => `${type}:${value}`;
-    const selected = new Set([
-        ...nonCode.map((skill) => selectionKey("skill", skill)),
-        ...allPrompts.map((prompt) => selectionKey("prompt", prompt)),
-    ]);
+    const selected = new Set(existingSkills !== undefined || existingPrompts !== undefined
+        ? [
+            ...(existingSkills ?? []).map((skill) => selectionKey("skill", skill)),
+            ...(existingPrompts ?? []).map((prompt) => selectionKey("prompt", prompt)),
+        ]
+        : [
+            ...nonCode.map((skill) => selectionKey("skill", skill)),
+            ...allPrompts.map((prompt) => selectionKey("prompt", prompt)),
+        ]);
     let cursorIdx = 0;
     let lineCount = 0;
     const { stdin, stdout } = process;
@@ -370,7 +376,7 @@ const ttySelectSkillsAndPrompts = (allSkills, allPrompts) => {
         stdin.on("data", onData);
     });
 };
-// --- update helpers ---
+// --- existing installation detection ---
 const detectInstalledAgents = (cwd) => AGENTS.filter((agent) => fs_1.default.existsSync(instructionsDest(agent, cwd)));
 const detectInstalledSkills = (agent, cwd) => {
     const dir = skillsDir(agent, cwd);
@@ -382,66 +388,43 @@ const detectInstalledSkills = (agent, cwd) => {
         .filter((e) => e.isDirectory())
         .map((e) => e.name);
 };
-// --- TTY mode selector ---
-const ttySelectMode = () => {
-    const options = [
-        { value: "install", label: "Fresh install" },
-        { value: "update", label: "Update existing" },
+const packageVersion = (srcRoot) => {
+    const pkg = JSON.parse(fs_1.default.readFileSync(path_1.default.join(srcRoot, "package.json"), "utf8"));
+    return pkg.version;
+};
+const readManifest = (cwd) => {
+    const manifestPath = path_1.default.join(cwd, MANIFEST_FILE);
+    if (!fs_1.default.existsSync(manifestPath)) {
+        return null;
+    }
+    try {
+        return JSON.parse(fs_1.default.readFileSync(manifestPath, "utf8"));
+    }
+    catch {
+        return null;
+    }
+};
+const writeManifest = (cwd, manifest) => {
+    fs_1.default.writeFileSync(path_1.default.join(cwd, MANIFEST_FILE), JSON.stringify(manifest, null, 2) + "\n");
+    console.log(`  wrote  ${MANIFEST_FILE}`);
+};
+const detectExistingSelection = (cwd, srcRoot) => {
+    const manifest = readManifest(cwd);
+    if (manifest) {
+        return {
+            agents: manifest.agents,
+            skills: manifest.skills,
+            prompts: manifest.prompts,
+        };
+    }
+    const agents = detectInstalledAgents(cwd);
+    const skills = [
+        ...new Set(agents.flatMap((agent) => detectInstalledSkills(agent, cwd))),
     ];
-    let cursor = 0;
-    let lineCount = 0;
-    const { stdin, stdout } = process;
-    const renderList = () => {
-        if (lineCount > 0) {
-            stdout.write(`\x1b[${lineCount}A\x1b[0J`);
-        }
-        const lines = [
-            "  Mode  \x1b[2m(\u2191\u2193 navigate \u00b7 enter confirm)\x1b[0m",
-            ...options.map((opt, i) => {
-                const pointer = i === cursor ? "\x1b[36m>\x1b[0m" : " ";
-                return `  ${pointer}  ${opt.label}`;
-            }),
-        ];
-        stdout.write(lines.join("\n") + "\n");
-        lineCount = lines.length;
-    };
-    stdout.write("\x1b[?25l");
-    stdin.setRawMode(true);
-    stdin.resume();
-    renderList();
-    return new Promise((resolve) => {
-        const cleanup = (result) => {
-            stdin.removeListener("data", onData);
-            stdin.setRawMode(false);
-            stdin.pause();
-            stdout.write("\x1b[?25h");
-            if (lineCount > 0) {
-                stdout.write(`\x1b[${lineCount}A\x1b[0J`);
-            }
-            stdout.write(`  mode: ${result}\n`);
-        };
-        const onData = (chunk) => {
-            const key = chunk.toString();
-            if (key === "\x03") {
-                cleanup("install");
-                process.exit(130);
-            }
-            else if (key === "\x1b[A") {
-                cursor = (cursor - 1 + options.length) % options.length;
-                renderList();
-            }
-            else if (key === "\x1b[B") {
-                cursor = (cursor + 1) % options.length;
-                renderList();
-            }
-            else if (key === "\r") {
-                const result = options[cursor].value;
-                cleanup(result);
-                resolve(result);
-            }
-        };
-        stdin.on("data", onData);
-    });
+    const prompts = agents.includes("copilot")
+        ? listPromptFiles(srcRoot).filter((file) => fs_1.default.existsSync(path_1.default.join(cwd, ".github", "prompts", file)))
+        : [];
+    return { agents, skills, prompts };
 };
 // --- main ---
 const runInstall = (agents, selectedSkills, selectedPrompts, srcRoot, srcGithub, srcSkillsBase, cwd) => {
@@ -460,46 +443,23 @@ const runInstall = (agents, selectedSkills, selectedPrompts, srcRoot, srcGithub,
     const totalItems = agents.length * (1 + selectedSkills.length) + promptItems + 1;
     console.log(`\ndone - ${totalItems} item(s) installed for ${agents.join(", ")}`);
 };
-const runUpdate = (srcRoot, srcGithub, srcSkillsBase, cwd) => {
-    const agents = detectInstalledAgents(cwd);
-    if (agents.length === 0) {
-        console.log("  nothing found to update - run a fresh install first");
-        return;
-    }
-    const allSourceSkills = listSkills(srcSkillsBase);
-    console.log("");
-    agents.forEach((agent) => {
-        copyInstructions(instructionsSrc(agent, srcGithub), instructionsDest(agent, cwd));
-        const dest = skillsDir(agent, cwd);
-        const installed = detectInstalledSkills(agent, cwd);
-        // overwrite existing skills and add new non-code ones; skip new code skills
-        allSourceSkills.forEach((skill) => {
-            if (installed.includes(skill) || NON_CODE_SKILLS.has(skill)) {
-                copySkill(srcSkillsBase, dest, skill);
-            }
-        });
-        if (agent === "copilot") {
-            copyCopilotDirectory(srcRoot, cwd, "instructions");
-            copyCopilotDirectory(srcRoot, cwd, "prompts");
-        }
-    });
-    copyInstructions(path_1.default.join(__dirname, "..", "AGENT.md"), path_1.default.join(cwd, "AGENT.md"));
-    console.log(`\ndone - updated ${agents.join(", ")}`);
-};
 const main = async () => {
     const srcRoot = path_1.default.join(__dirname, "..");
     const srcGithub = path_1.default.join(srcRoot, ".github");
     const srcSkillsBase = path_1.default.join(srcRoot, "skills");
     const cwd = process.cwd();
+    const existing = detectExistingSelection(cwd, srcRoot);
+    const hasExisting = existing.agents.length > 0;
     if (process.stdin.isTTY) {
-        const mode = await ttySelectMode();
-        if (mode === "update") {
-            runUpdate(srcRoot, srcGithub, srcSkillsBase, cwd);
-            return;
-        }
-        const agents = await ttySelectAgents();
-        const selection = await ttySelectSkillsAndPrompts(listSkills(srcSkillsBase), agents.includes("copilot") ? listPromptFiles(srcRoot) : []);
+        const agents = await ttySelectAgents(existing.agents);
+        const selection = await ttySelectSkillsAndPrompts(listSkills(srcSkillsBase), agents.includes("copilot") ? listPromptFiles(srcRoot) : [], hasExisting ? existing.skills : undefined, hasExisting ? existing.prompts : undefined);
         runInstall(agents, selection.skills, selection.prompts, srcRoot, srcGithub, srcSkillsBase, cwd);
+        writeManifest(cwd, {
+            version: packageVersion(srcRoot),
+            agents,
+            skills: selection.skills,
+            prompts: selection.prompts,
+        });
     }
     else {
         const prompter = createPrompter();
@@ -510,6 +470,12 @@ const main = async () => {
             : [];
         prompter.close();
         runInstall(agents, selectedSkills, selectedPrompts, srcRoot, srcGithub, srcSkillsBase, cwd);
+        writeManifest(cwd, {
+            version: packageVersion(srcRoot),
+            agents,
+            skills: selectedSkills,
+            prompts: selectedPrompts,
+        });
     }
 };
 main().catch((err) => {

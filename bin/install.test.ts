@@ -74,6 +74,12 @@ describe("install script", () => {
 
 describe("install script - prompt cherry-pick", () => {
   let tmpDir: string;
+  const promptsDir = path.resolve(__dirname, "..", "prompts");
+  const promptFiles = fs
+    .readdirSync(promptsDir, { withFileTypes: true })
+    .filter((e) => e.isFile())
+    .map((e) => e.name);
+  const generatePlanIndex = promptFiles.indexOf("generate-plan.prompt.md") + 1;
 
   before(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "copilot-setup-prompts-"));
@@ -84,7 +90,7 @@ describe("install script - prompt cherry-pick", () => {
   });
 
   it("exits with code 0", () => {
-    const result = run("\n\n\nn\n1\n", tmpDir);
+    const result = run(`\n\n\nn\n${generatePlanIndex}\n`, tmpDir);
 
     assert.equal(result.status, 0);
   });

@@ -18,6 +18,15 @@ const NON_CODE_SKILLS = new Set([
   "shortcuts",
 ]);
 
+const MANIFEST_FILE = ".agent-manifest.json";
+
+interface Manifest {
+  version: string;
+  agents: Agent[];
+  skills: string[];
+  prompts: string[];
+}
+
 interface Prompter {
   ask: (question: string) => Promise<string>;
   close: () => void;
@@ -170,15 +179,18 @@ const copyPromptFile = (srcRoot: string, cwd: string, file: string): void => {
 
 // --- interactive TTY agent selector ---
 
-const ttySelectAgents = (): Promise<Agent[]> => {
+const ttySelectAgents = (preselected: Agent[] = []): Promise<Agent[]> => {
   const options: Array<{ value: Agent; label: string }> = [
     { value: "copilot", label: "copilot (default)" },
     { value: "claude", label: "claude" },
     { value: "codex", label: "codex" },
   ];
 
-  const selected = new Set<Agent>();
-  let cursor = 0;
+  const selected = new Set<Agent>(preselected);
+  let cursor = Math.max(
+    0,
+    options.findIndex((opt) => preselected.includes(opt.value)),
+  );
   let lineCount = 0;
 
   const { stdin, stdout } = process;
@@ -314,6 +326,8 @@ const promptPrompts = async (
 const ttySelectSkillsAndPrompts = (
   allSkills: string[],
   allPrompts: string[],
+  existingSkills?: string[],
+  existingPrompts?: string[],
 ): Promise<{ skills: string[]; prompts: string[] }> => {
   type Item =
     | { kind: "header"; label: string }
@@ -368,10 +382,21 @@ const ttySelectSkillsAndPrompts = (
 
   const selectionKey = (type: "skill" | "prompt", value: string) =>
     `${type}:${value}`;
-  const selected = new Set<string>([
-    ...nonCode.map((skill) => selectionKey("skill", skill)),
-    ...allPrompts.map((prompt) => selectionKey("prompt", prompt)),
-  ]);
+  const selected = new Set<string>(
+    existingSkills !== undefined || existingPrompts !== undefined
+      ? [
+          ...(existingSkills ?? []).map((skill) =>
+            selectionKey("skill", skill),
+          ),
+          ...(existingPrompts ?? []).map((prompt) =>
+            selectionKey("prompt", prompt),
+          ),
+        ]
+      : [
+          ...nonCode.map((skill) => selectionKey("skill", skill)),
+          ...allPrompts.map((prompt) => selectionKey("prompt", prompt)),
+        ],
+  );
   let cursorIdx = 0;
   let lineCount = 0;
 
@@ -519,7 +544,7 @@ const ttySelectSkillsAndPrompts = (
   });
 };
 
-// --- update helpers ---
+// --- existing installation detection ---
 
 const detectInstalledAgents = (cwd: string): Agent[] =>
   AGENTS.filter((agent) => fs.existsSync(instructionsDest(agent, cwd)));
@@ -537,80 +562,68 @@ const detectInstalledSkills = (agent: Agent, cwd: string): string[] => {
     .map((e) => e.name);
 };
 
-// --- TTY mode selector ---
+const packageVersion = (srcRoot: string): string => {
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(srcRoot, "package.json"), "utf8"),
+  ) as { version: string };
 
-const ttySelectMode = (): Promise<"install" | "update"> => {
-  type Mode = "install" | "update";
+  return pkg.version;
+};
 
-  const options: Array<{ value: Mode; label: string }> = [
-    { value: "install", label: "Fresh install" },
-    { value: "update", label: "Update existing" },
+const readManifest = (cwd: string): Manifest | null => {
+  const manifestPath = path.join(cwd, MANIFEST_FILE);
+
+  if (!fs.existsSync(manifestPath)) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(fs.readFileSync(manifestPath, "utf8")) as Manifest;
+  } catch {
+    return null;
+  }
+};
+
+const writeManifest = (cwd: string, manifest: Manifest): void => {
+  fs.writeFileSync(
+    path.join(cwd, MANIFEST_FILE),
+    JSON.stringify(manifest, null, 2) + "\n",
+  );
+
+  console.log(`  wrote  ${MANIFEST_FILE}`);
+};
+
+interface ExistingSelection {
+  agents: Agent[];
+  skills: string[];
+  prompts: string[];
+}
+
+const detectExistingSelection = (
+  cwd: string,
+  srcRoot: string,
+): ExistingSelection => {
+  const manifest = readManifest(cwd);
+
+  if (manifest) {
+    return {
+      agents: manifest.agents,
+      skills: manifest.skills,
+      prompts: manifest.prompts,
+    };
+  }
+
+  const agents = detectInstalledAgents(cwd);
+  const skills = [
+    ...new Set(agents.flatMap((agent) => detectInstalledSkills(agent, cwd))),
   ];
+  const prompts = agents.includes("copilot")
+    ? listPromptFiles(srcRoot).filter((file) =>
+        fs.existsSync(path.join(cwd, ".github", "prompts", file)),
+      )
+    : [];
 
-  let cursor = 0;
-  let lineCount = 0;
-
-  const { stdin, stdout } = process;
-
-  const renderList = () => {
-    if (lineCount > 0) {
-      stdout.write(`\x1b[${lineCount}A\x1b[0J`);
-    }
-
-    const lines = [
-      "  Mode  \x1b[2m(\u2191\u2193 navigate \u00b7 enter confirm)\x1b[0m",
-      ...options.map((opt, i) => {
-        const pointer = i === cursor ? "\x1b[36m>\x1b[0m" : " ";
-
-        return `  ${pointer}  ${opt.label}`;
-      }),
-    ];
-
-    stdout.write(lines.join("\n") + "\n");
-    lineCount = lines.length;
-  };
-
-  stdout.write("\x1b[?25l");
-  (stdin as NodeJS.ReadStream).setRawMode(true);
-  stdin.resume();
-  renderList();
-
-  return new Promise<Mode>((resolve) => {
-    const cleanup = (result: Mode) => {
-      stdin.removeListener("data", onData);
-      (stdin as NodeJS.ReadStream).setRawMode(false);
-      stdin.pause();
-      stdout.write("\x1b[?25h");
-
-      if (lineCount > 0) {
-        stdout.write(`\x1b[${lineCount}A\x1b[0J`);
-      }
-
-      stdout.write(`  mode: ${result}\n`);
-    };
-
-    const onData = (chunk: Buffer) => {
-      const key = chunk.toString();
-
-      if (key === "\x03") {
-        cleanup("install");
-        process.exit(130);
-      } else if (key === "\x1b[A") {
-        cursor = (cursor - 1 + options.length) % options.length;
-        renderList();
-      } else if (key === "\x1b[B") {
-        cursor = (cursor + 1) % options.length;
-        renderList();
-      } else if (key === "\r") {
-        const result = options[cursor].value;
-
-        cleanup(result);
-        resolve(result);
-      }
-    };
-
-    stdin.on("data", onData);
-  });
+  return { agents, skills, prompts };
 };
 
 // --- main ---
@@ -656,71 +669,21 @@ const runInstall = (
   );
 };
 
-const runUpdate = (
-  srcRoot: string,
-  srcGithub: string,
-  srcSkillsBase: string,
-  cwd: string,
-): void => {
-  const agents = detectInstalledAgents(cwd);
-
-  if (agents.length === 0) {
-    console.log("  nothing found to update - run a fresh install first");
-    return;
-  }
-
-  const allSourceSkills = listSkills(srcSkillsBase);
-
-  console.log("");
-
-  agents.forEach((agent) => {
-    copyInstructions(
-      instructionsSrc(agent, srcGithub),
-      instructionsDest(agent, cwd),
-    );
-
-    const dest = skillsDir(agent, cwd);
-    const installed = detectInstalledSkills(agent, cwd);
-
-    // overwrite existing skills and add new non-code ones; skip new code skills
-    allSourceSkills.forEach((skill) => {
-      if (installed.includes(skill) || NON_CODE_SKILLS.has(skill)) {
-        copySkill(srcSkillsBase, dest, skill);
-      }
-    });
-
-    if (agent === "copilot") {
-      copyCopilotDirectory(srcRoot, cwd, "instructions");
-      copyCopilotDirectory(srcRoot, cwd, "prompts");
-    }
-  });
-
-  copyInstructions(
-    path.join(__dirname, "..", "AGENT.md"),
-    path.join(cwd, "AGENT.md"),
-  );
-
-  console.log(`\ndone - updated ${agents.join(", ")}`);
-};
-
 const main = async (): Promise<void> => {
   const srcRoot = path.join(__dirname, "..");
   const srcGithub = path.join(srcRoot, ".github");
   const srcSkillsBase = path.join(srcRoot, "skills");
   const cwd = process.cwd();
+  const existing = detectExistingSelection(cwd, srcRoot);
+  const hasExisting = existing.agents.length > 0;
 
   if (process.stdin.isTTY) {
-    const mode = await ttySelectMode();
-
-    if (mode === "update") {
-      runUpdate(srcRoot, srcGithub, srcSkillsBase, cwd);
-      return;
-    }
-
-    const agents = await ttySelectAgents();
+    const agents = await ttySelectAgents(existing.agents);
     const selection = await ttySelectSkillsAndPrompts(
       listSkills(srcSkillsBase),
       agents.includes("copilot") ? listPromptFiles(srcRoot) : [],
+      hasExisting ? existing.skills : undefined,
+      hasExisting ? existing.prompts : undefined,
     );
 
     runInstall(
@@ -732,6 +695,13 @@ const main = async (): Promise<void> => {
       srcSkillsBase,
       cwd,
     );
+
+    writeManifest(cwd, {
+      version: packageVersion(srcRoot),
+      agents,
+      skills: selection.skills,
+      prompts: selection.prompts,
+    });
   } else {
     const prompter = createPrompter();
     const agents = await promptAgent(prompter);
@@ -754,6 +724,13 @@ const main = async (): Promise<void> => {
       srcSkillsBase,
       cwd,
     );
+
+    writeManifest(cwd, {
+      version: packageVersion(srcRoot),
+      agents,
+      skills: selectedSkills,
+      prompts: selectedPrompts,
+    });
   }
 };
 
