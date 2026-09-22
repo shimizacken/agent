@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import readline from "readline";
@@ -19,12 +20,21 @@ const NON_CODE_SKILLS = new Set([
 ]);
 
 const MANIFEST_FILE = ".agent-manifest.json";
+const MANIFEST_SOURCE = "shimizacken/agent";
+const MANIFEST_SOURCE_TYPE = "github";
+
+interface ManifestEntry {
+  source: string;
+  sourceType: string;
+  skillPath: string;
+  computedHash: string;
+}
 
 interface Manifest {
-  version: string;
+  version: 1;
   agents: Agent[];
-  skills: string[];
-  prompts: string[];
+  skills: Record<string, ManifestEntry>;
+  prompts: Record<string, ManifestEntry>;
 }
 
 interface Prompter {
@@ -562,13 +572,41 @@ const detectInstalledSkills = (agent: Agent, cwd: string): string[] => {
     .map((e) => e.name);
 };
 
-const packageVersion = (srcRoot: string): string => {
-  const pkg = JSON.parse(
-    fs.readFileSync(path.join(srcRoot, "package.json"), "utf8"),
-  ) as { version: string };
+const computeHash = (filePath: string): string =>
+  crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
 
-  return pkg.version;
-};
+const buildManifestEntry = (
+  srcRoot: string,
+  filePath: string,
+): ManifestEntry => ({
+  source: MANIFEST_SOURCE,
+  sourceType: MANIFEST_SOURCE_TYPE,
+  skillPath: path.relative(srcRoot, filePath),
+  computedHash: computeHash(filePath),
+});
+
+const buildSkillEntries = (
+  skills: string[],
+  srcSkillsBase: string,
+  srcRoot: string,
+): Record<string, ManifestEntry> =>
+  Object.fromEntries(
+    skills.map((skill) => [
+      skill,
+      buildManifestEntry(srcRoot, path.join(srcSkillsBase, skill, "SKILL.md")),
+    ]),
+  );
+
+const buildPromptEntries = (
+  prompts: string[],
+  srcRoot: string,
+): Record<string, ManifestEntry> =>
+  Object.fromEntries(
+    prompts.map((file) => [
+      file,
+      buildManifestEntry(srcRoot, path.join(srcRoot, "prompts", file)),
+    ]),
+  );
 
 const readManifest = (cwd: string): Manifest | null => {
   const manifestPath = path.join(cwd, MANIFEST_FILE);
@@ -608,8 +646,8 @@ const detectExistingSelection = (
   if (manifest) {
     return {
       agents: manifest.agents,
-      skills: manifest.skills,
-      prompts: manifest.prompts,
+      skills: Object.keys(manifest.skills),
+      prompts: Object.keys(manifest.prompts),
     };
   }
 
@@ -624,6 +662,113 @@ const detectExistingSelection = (
     : [];
 
   return { agents, skills, prompts };
+};
+
+// --- removal confirmation ---
+
+const askQuestion = (question: string): Promise<string> => {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer);
+    });
+  });
+};
+
+const removeSkillFromAgents = (
+  agents: Agent[],
+  skill: string,
+  cwd: string,
+): void => {
+  agents.forEach((agent) => {
+    const target = path.join(skillsDir(agent, cwd), skill);
+
+    if (fs.existsSync(target)) {
+      fs.rmSync(target, { recursive: true, force: true });
+      console.log(`  removed  ${path.relative(cwd, target)}/`);
+    }
+  });
+};
+
+const removePromptFile = (cwd: string, file: string): void => {
+  const target = path.join(cwd, ".github", "prompts", file);
+
+  if (fs.existsSync(target)) {
+    fs.rmSync(target);
+    console.log(`  removed  ${path.relative(cwd, target)}`);
+  }
+};
+
+const removeAgentInstallation = (agent: Agent, cwd: string): void => {
+  const instructions = instructionsDest(agent, cwd);
+
+  if (fs.existsSync(instructions)) {
+    fs.rmSync(instructions);
+    console.log(`  removed  ${path.relative(cwd, instructions)}`);
+  }
+
+  const dir = skillsDir(agent, cwd);
+
+  if (fs.existsSync(dir)) {
+    fs.rmSync(dir, { recursive: true, force: true });
+    console.log(`  removed  ${path.relative(cwd, dir)}/`);
+  }
+};
+
+const confirmAndRemove = async (
+  ask: (question: string) => Promise<string>,
+  cwd: string,
+  existing: ExistingSelection,
+  finalAgents: Agent[],
+  finalSkills: string[],
+  finalPrompts: string[],
+): Promise<void> => {
+  const removedAgents = existing.agents.filter(
+    (agent) => !finalAgents.includes(agent),
+  );
+  const removedSkills = existing.skills.filter(
+    (skill) => !finalSkills.includes(skill),
+  );
+  const removedPrompts = existing.prompts.filter(
+    (file) => !finalPrompts.includes(file),
+  );
+
+  if (
+    removedAgents.length === 0 &&
+    removedSkills.length === 0 &&
+    removedPrompts.length === 0
+  ) {
+    return;
+  }
+
+  const removedLabels = [
+    ...removedAgents.map((agent) => `${agent} (agent)`),
+    ...removedSkills,
+    ...removedPrompts.map((file) => promptLabel(file)),
+  ];
+
+  const answer = await ask(
+    `\nAre you sure you want to remove the following:\n${removedLabels
+      .map((label) => `  - ${label}`)
+      .join("\n")}\n[y/N]: `,
+  );
+
+  if (answer.trim().toLowerCase() !== "y") {
+    console.log("  skipped removal - existing files kept");
+    return;
+  }
+
+  console.log("");
+  removedAgents.forEach((agent) => removeAgentInstallation(agent, cwd));
+  removedSkills.forEach((skill) =>
+    removeSkillFromAgents(finalAgents, skill, cwd),
+  );
+  removedPrompts.forEach((file) => removePromptFile(cwd, file));
 };
 
 // --- main ---
@@ -678,12 +823,23 @@ const main = async (): Promise<void> => {
   const hasExisting = existing.agents.length > 0;
 
   if (process.stdin.isTTY) {
-    const agents = await ttySelectAgents(existing.agents);
+    const agents = hasExisting
+      ? existing.agents
+      : await ttySelectAgents(existing.agents);
     const selection = await ttySelectSkillsAndPrompts(
       listSkills(srcSkillsBase),
       agents.includes("copilot") ? listPromptFiles(srcRoot) : [],
       hasExisting ? existing.skills : undefined,
       hasExisting ? existing.prompts : undefined,
+    );
+
+    await confirmAndRemove(
+      askQuestion,
+      cwd,
+      existing,
+      agents,
+      selection.skills,
+      selection.prompts,
     );
 
     runInstall(
@@ -697,10 +853,10 @@ const main = async (): Promise<void> => {
     );
 
     writeManifest(cwd, {
-      version: packageVersion(srcRoot),
+      version: 1,
       agents,
-      skills: selection.skills,
-      prompts: selection.prompts,
+      skills: buildSkillEntries(selection.skills, srcSkillsBase, srcRoot),
+      prompts: buildPromptEntries(selection.prompts, srcRoot),
     });
   } else {
     const prompter = createPrompter();
@@ -712,6 +868,15 @@ const main = async (): Promise<void> => {
     const selectedPrompts = agents.includes("copilot")
       ? await promptPrompts(prompter, listPromptFiles(srcRoot))
       : [];
+
+    await confirmAndRemove(
+      prompter.ask,
+      cwd,
+      existing,
+      agents,
+      selectedSkills,
+      selectedPrompts,
+    );
 
     prompter.close();
 
@@ -726,10 +891,10 @@ const main = async (): Promise<void> => {
     );
 
     writeManifest(cwd, {
-      version: packageVersion(srcRoot),
+      version: 1,
       agents,
-      skills: selectedSkills,
-      prompts: selectedPrompts,
+      skills: buildSkillEntries(selectedSkills, srcSkillsBase, srcRoot),
+      prompts: buildPromptEntries(selectedPrompts, srcRoot),
     });
   }
 };

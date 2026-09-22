@@ -109,6 +109,67 @@ describe("install script - prompt cherry-pick", () => {
   });
 });
 
+describe("install script - keeps files when removal is declined", () => {
+  let tmpDir: string;
+  const promptsDir = path.resolve(__dirname, "..", "prompts");
+  const promptFiles = fs
+    .readdirSync(promptsDir, { withFileTypes: true })
+    .filter((e) => e.isFile())
+    .map((e) => e.name);
+  const generatePlanIndex = promptFiles.indexOf("generate-plan.prompt.md") + 1;
+
+  before(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "copilot-setup-decline-"));
+    run(`\n\n\nn\n${generatePlanIndex}\n`, tmpDir);
+  });
+
+  after(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("asks for confirmation and keeps the prompt when declined", () => {
+    const result = run("\n\n\nn\n\nn\n", tmpDir);
+
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /Are you sure you want to remove/);
+    assert.ok(
+      fs.existsSync(
+        path.join(tmpDir, ".github", "prompts", "generate-plan.prompt.md"),
+      ),
+    );
+  });
+});
+
+describe("install script - removes files when removal is confirmed", () => {
+  let tmpDir: string;
+  const promptsDir = path.resolve(__dirname, "..", "prompts");
+  const promptFiles = fs
+    .readdirSync(promptsDir, { withFileTypes: true })
+    .filter((e) => e.isFile())
+    .map((e) => e.name);
+  const generatePlanIndex = promptFiles.indexOf("generate-plan.prompt.md") + 1;
+
+  before(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "copilot-setup-confirm-"));
+    run(`\n\n\nn\n${generatePlanIndex}\n`, tmpDir);
+  });
+
+  after(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("removes the deselected prompt when confirmed", () => {
+    const result = run("\n\n\nn\n\ny\n", tmpDir);
+
+    assert.equal(result.status, 0);
+    assert.ok(
+      !fs.existsSync(
+        path.join(tmpDir, ".github", "prompts", "generate-plan.prompt.md"),
+      ),
+    );
+  });
+});
+
 describe("install script - claude agent", () => {
   let tmpDir: string;
 

@@ -66,6 +66,49 @@ const run = (input, tmpDir) => (0, node_child_process_1.spawnSync)("node", [node
         strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(tmpDir, ".github", "prompts", "pr-description.prompt.md")));
     });
 });
+(0, node_test_1.describe)("install script - keeps files when removal is declined", () => {
+    let tmpDir;
+    const promptsDir = node_path_1.default.resolve(__dirname, "..", "prompts");
+    const promptFiles = node_fs_1.default
+        .readdirSync(promptsDir, { withFileTypes: true })
+        .filter((e) => e.isFile())
+        .map((e) => e.name);
+    const generatePlanIndex = promptFiles.indexOf("generate-plan.prompt.md") + 1;
+    (0, node_test_1.before)(() => {
+        tmpDir = node_fs_1.default.mkdtempSync(node_path_1.default.join(node_os_1.default.tmpdir(), "copilot-setup-decline-"));
+        run(`\n\n\nn\n${generatePlanIndex}\n`, tmpDir);
+    });
+    (0, node_test_1.after)(() => {
+        node_fs_1.default.rmSync(tmpDir, { recursive: true, force: true });
+    });
+    (0, node_test_1.it)("asks for confirmation and keeps the prompt when declined", () => {
+        const result = run("\n\n\nn\n\nn\n", tmpDir);
+        strict_1.default.equal(result.status, 0);
+        strict_1.default.match(result.stdout, /Are you sure you want to remove/);
+        strict_1.default.ok(node_fs_1.default.existsSync(node_path_1.default.join(tmpDir, ".github", "prompts", "generate-plan.prompt.md")));
+    });
+});
+(0, node_test_1.describe)("install script - removes files when removal is confirmed", () => {
+    let tmpDir;
+    const promptsDir = node_path_1.default.resolve(__dirname, "..", "prompts");
+    const promptFiles = node_fs_1.default
+        .readdirSync(promptsDir, { withFileTypes: true })
+        .filter((e) => e.isFile())
+        .map((e) => e.name);
+    const generatePlanIndex = promptFiles.indexOf("generate-plan.prompt.md") + 1;
+    (0, node_test_1.before)(() => {
+        tmpDir = node_fs_1.default.mkdtempSync(node_path_1.default.join(node_os_1.default.tmpdir(), "copilot-setup-confirm-"));
+        run(`\n\n\nn\n${generatePlanIndex}\n`, tmpDir);
+    });
+    (0, node_test_1.after)(() => {
+        node_fs_1.default.rmSync(tmpDir, { recursive: true, force: true });
+    });
+    (0, node_test_1.it)("removes the deselected prompt when confirmed", () => {
+        const result = run("\n\n\nn\n\ny\n", tmpDir);
+        strict_1.default.equal(result.status, 0);
+        strict_1.default.ok(!node_fs_1.default.existsSync(node_path_1.default.join(tmpDir, ".github", "prompts", "generate-plan.prompt.md")));
+    });
+});
 (0, node_test_1.describe)("install script - claude agent", () => {
     let tmpDir;
     (0, node_test_1.before)(() => {
