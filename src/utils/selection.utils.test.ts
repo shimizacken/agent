@@ -1,16 +1,14 @@
-import { describe, it } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it, expect } from "vitest";
 
 import { getSelectionKey, getRemovedItems } from "./selection.utils";
 
 describe("getSelectionKey", () => {
   it("joins the type and value with a colon", () => {
-    assert.equal(getSelectionKey("skill", "shortcuts"), "skill:shortcuts");
+    expect(getSelectionKey("skill", "shortcuts")).toBe("skill:shortcuts");
   });
 
   it("distinguishes skills and prompts with the same value", () => {
-    assert.notEqual(
-      getSelectionKey("skill", "generate-plan"),
+    expect(getSelectionKey("skill", "generate-plan")).not.toBe(
       getSelectionKey("prompt", "generate-plan"),
     );
   });
@@ -18,14 +16,14 @@ describe("getSelectionKey", () => {
 
 describe("getRemovedItems", () => {
   it("returns items present before but not in the final list", () => {
-    assert.deepEqual(getRemovedItems(["a", "b", "c"], ["b"]), ["a", "c"]);
+    expect(getRemovedItems(["a", "b", "c"], ["b"])).toEqual(["a", "c"]);
   });
 
   it("returns an empty array when nothing was removed", () => {
-    assert.deepEqual(getRemovedItems(["a", "b"], ["a", "b", "c"]), []);
+    expect(getRemovedItems(["a", "b"], ["a", "b", "c"])).toEqual([]);
   });
 
   it("returns an empty array when there was nothing existing", () => {
-    assert.deepEqual(getRemovedItems([], ["a"]), []);
+    expect(getRemovedItems([], ["a"])).toEqual([]);
   });
 });

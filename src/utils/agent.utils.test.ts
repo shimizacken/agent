@@ -1,5 +1,4 @@
-import { describe, it } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it, expect } from "vitest";
 
 import {
   parseAgentsInput,
@@ -10,44 +9,41 @@ import {
 
 describe("parseAgentsInput", () => {
   it("returns copilot for empty input", () => {
-    assert.deepEqual(parseAgentsInput(""), ["copilot"]);
+    expect(parseAgentsInput("")).toEqual(["copilot"]);
   });
 
   it("returns copilot for whitespace-only input", () => {
-    assert.deepEqual(parseAgentsInput("   "), ["copilot"]);
+    expect(parseAgentsInput("   ")).toEqual(["copilot"]);
   });
 
   it("matches a single agent by prefix", () => {
-    assert.deepEqual(parseAgentsInput("claude"), ["claude"]);
+    expect(parseAgentsInput("claude")).toEqual(["claude"]);
   });
 
   it("matches multiple comma-separated agents", () => {
-    assert.deepEqual(parseAgentsInput("copilot,claude"), ["copilot", "claude"]);
+    expect(parseAgentsInput("copilot,claude")).toEqual(["copilot", "claude"]);
   });
 
   it("falls back to copilot when no agent matches", () => {
-    assert.deepEqual(parseAgentsInput("unknown"), ["copilot"]);
+    expect(parseAgentsInput("unknown")).toEqual(["copilot"]);
   });
 });
 
 describe("getInstructionsSrcPath", () => {
   it("returns the claude instructions source path", () => {
-    assert.equal(
-      getInstructionsSrcPath("claude", "/repo/.github"),
+    expect(getInstructionsSrcPath("claude", "/repo/.github")).toBe(
       "/repo/.github/agent-instructions/claude.md",
     );
   });
 
   it("returns the codex instructions source path", () => {
-    assert.equal(
-      getInstructionsSrcPath("codex", "/repo/.github"),
+    expect(getInstructionsSrcPath("codex", "/repo/.github")).toBe(
       "/repo/.github/agent-instructions/codex.md",
     );
   });
 
   it("returns the copilot instructions source path", () => {
-    assert.equal(
-      getInstructionsSrcPath("copilot", "/repo/.github"),
+    expect(getInstructionsSrcPath("copilot", "/repo/.github")).toBe(
       "/repo/.github/copilot-instructions.md",
     );
   });
@@ -55,22 +51,19 @@ describe("getInstructionsSrcPath", () => {
 
 describe("getInstructionsDestPath", () => {
   it("returns CLAUDE.md for claude", () => {
-    assert.equal(
-      getInstructionsDestPath("claude", "/project"),
+    expect(getInstructionsDestPath("claude", "/project")).toBe(
       "/project/CLAUDE.md",
     );
   });
 
   it("returns AGENTS.md for codex", () => {
-    assert.equal(
-      getInstructionsDestPath("codex", "/project"),
+    expect(getInstructionsDestPath("codex", "/project")).toBe(
       "/project/AGENTS.md",
     );
   });
 
   it("returns .github/copilot-instructions.md for copilot", () => {
-    assert.equal(
-      getInstructionsDestPath("copilot", "/project"),
+    expect(getInstructionsDestPath("copilot", "/project")).toBe(
       "/project/.github/copilot-instructions.md",
     );
   });
@@ -78,22 +71,19 @@ describe("getInstructionsDestPath", () => {
 
 describe("getSkillsDirPath", () => {
   it("returns .claude/skills for claude", () => {
-    assert.equal(
-      getSkillsDirPath("claude", "/project"),
+    expect(getSkillsDirPath("claude", "/project")).toBe(
       "/project/.claude/skills",
     );
   });
 
   it("returns .agents/skills for codex", () => {
-    assert.equal(
-      getSkillsDirPath("codex", "/project"),
+    expect(getSkillsDirPath("codex", "/project")).toBe(
       "/project/.agents/skills",
     );
   });
 
   it("returns .github/skills for copilot", () => {
-    assert.equal(
-      getSkillsDirPath("copilot", "/project"),
+    expect(getSkillsDirPath("copilot", "/project")).toBe(
       "/project/.github/skills",
     );
   });

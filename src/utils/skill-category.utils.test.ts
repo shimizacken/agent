@@ -1,5 +1,4 @@
-import { describe, it } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it, expect } from "vitest";
 
 import { categorizeSkills, NON_CODE_SKILLS } from "./skill-category.utils";
 
@@ -13,7 +12,7 @@ describe("categorizeSkills", () => {
       "angular-formatting",
     ]);
 
-    assert.deepEqual(result, {
+    expect(result).toEqual({
       nonCode: ["conventional-commits"],
       coreCode: ["code-change"],
       react: ["react-formatting"],
@@ -23,7 +22,7 @@ describe("categorizeSkills", () => {
   });
 
   it("returns empty categories for an empty list", () => {
-    assert.deepEqual(categorizeSkills([]), {
+    expect(categorizeSkills([])).toEqual({
       nonCode: [],
       coreCode: [],
       react: [],
@@ -35,13 +34,13 @@ describe("categorizeSkills", () => {
   it("treats an unknown skill as core code", () => {
     const result = categorizeSkills(["some-new-skill"]);
 
-    assert.deepEqual(result.coreCode, ["some-new-skill"]);
+    expect(result.coreCode).toEqual(["some-new-skill"]);
   });
 });
 
 describe("NON_CODE_SKILLS", () => {
   it("contains the known non-code skill names", () => {
-    assert.ok(NON_CODE_SKILLS.has("shortcuts"));
-    assert.ok(!NON_CODE_SKILLS.has("code-change"));
+    expect(NON_CODE_SKILLS.has("shortcuts")).toBe(true);
+    expect(NON_CODE_SKILLS.has("code-change")).toBe(false);
   });
 });

@@ -1,5 +1,4 @@
-import { describe, it } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it, expect } from "vitest";
 
 import { buildManifestEntry, computeHashFromBuffer } from "./manifest.utils";
 
@@ -7,8 +6,7 @@ describe("computeHashFromBuffer", () => {
   it("returns a stable sha256 hex digest for the same content", () => {
     const hash = computeHashFromBuffer(Buffer.from("hello"));
 
-    assert.equal(
-      hash,
+    expect(hash).toBe(
       "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
     );
   });
@@ -17,7 +15,7 @@ describe("computeHashFromBuffer", () => {
     const a = computeHashFromBuffer(Buffer.from("hello"));
     const b = computeHashFromBuffer(Buffer.from("world"));
 
-    assert.notEqual(a, b);
+    expect(a).not.toBe(b);
   });
 });
 
@@ -29,7 +27,7 @@ describe("buildManifestEntry", () => {
       computedHash: "abc123",
     });
 
-    assert.deepEqual(entry, {
+    expect(entry).toEqual({
       source: "shimizacken/agent",
       sourceType: "github",
       skillPath: "skills/shortcuts/SKILL.md",
