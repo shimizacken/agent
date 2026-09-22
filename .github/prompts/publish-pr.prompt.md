@@ -1,0 +1,1 @@
+../../prompts/publish-pr.prompt.md
