@@ -140,11 +140,11 @@ const copySkill = (srcBase: string, destBase: string, skill: string): void => {
 };
 
 const copyCopilotDirectory = (
-  srcGithub: string,
+  srcRoot: string,
   cwd: string,
   directory: "instructions" | "prompts",
 ): void => {
-  const source = path.join(srcGithub, directory);
+  const source = path.join(srcRoot, directory);
   const destination = path.join(cwd, ".github", directory);
 
   fs.cpSync(source, destination, { recursive: true });
@@ -475,6 +475,7 @@ const ttySelectMode = (): Promise<"install" | "update"> => {
 const runInstall = (
   agents: Agent[],
   selectedSkills: string[],
+  srcRoot: string,
   srcGithub: string,
   srcSkillsBase: string,
   cwd: string,
@@ -492,8 +493,8 @@ const runInstall = (
     selectedSkills.forEach((skill) => copySkill(srcSkillsBase, dest, skill));
 
     if (agent === "copilot") {
-      copyCopilotDirectory(srcGithub, cwd, "instructions");
-      copyCopilotDirectory(srcGithub, cwd, "prompts");
+      copyCopilotDirectory(srcRoot, cwd, "instructions");
+      copyCopilotDirectory(srcRoot, cwd, "prompts");
     }
   });
 
@@ -507,7 +508,12 @@ const runInstall = (
   console.log(`\ndone - ${totalItems} item(s) installed for ${agents.join(", ")}`);
 };
 
-const runUpdate = (srcGithub: string, srcSkillsBase: string, cwd: string): void => {
+const runUpdate = (
+  srcRoot: string,
+  srcGithub: string,
+  srcSkillsBase: string,
+  cwd: string,
+): void => {
   const agents = detectInstalledAgents(cwd);
 
   if (agents.length === 0) {
@@ -533,8 +539,8 @@ const runUpdate = (srcGithub: string, srcSkillsBase: string, cwd: string): void 
     });
 
     if (agent === "copilot") {
-      copyCopilotDirectory(srcGithub, cwd, "instructions");
-      copyCopilotDirectory(srcGithub, cwd, "prompts");
+      copyCopilotDirectory(srcRoot, cwd, "instructions");
+      copyCopilotDirectory(srcRoot, cwd, "prompts");
     }
   });
 
@@ -547,22 +553,23 @@ const runUpdate = (srcGithub: string, srcSkillsBase: string, cwd: string): void 
 };
 
 const main = async (): Promise<void> => {
-  const srcGithub = path.join(__dirname, "..", ".github");
-  const srcSkillsBase = path.join(__dirname, "..", ".agent", "skills");
+  const srcRoot = path.join(__dirname, "..");
+  const srcGithub = path.join(srcRoot, ".github");
+  const srcSkillsBase = path.join(srcRoot, "skills");
   const cwd = process.cwd();
 
   if (process.stdin.isTTY) {
     const mode = await ttySelectMode();
 
     if (mode === "update") {
-      runUpdate(srcGithub, srcSkillsBase, cwd);
+      runUpdate(srcRoot, srcGithub, srcSkillsBase, cwd);
       return;
     }
 
     const agents = await ttySelectAgents();
     const selectedSkills = await ttySelectSkills(listSkills(srcSkillsBase));
 
-    runInstall(agents, selectedSkills, srcGithub, srcSkillsBase, cwd);
+    runInstall(agents, selectedSkills, srcRoot, srcGithub, srcSkillsBase, cwd);
   } else {
     const prompter = createPrompter();
     const agents = await promptAgent(prompter);
@@ -570,7 +577,7 @@ const main = async (): Promise<void> => {
 
     prompter.close();
 
-    runInstall(agents, selectedSkills, srcGithub, srcSkillsBase, cwd);
+    runInstall(agents, selectedSkills, srcRoot, srcGithub, srcSkillsBase, cwd);
   }
 };
 

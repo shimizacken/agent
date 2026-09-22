@@ -104,8 +104,8 @@ const copySkill = (srcBase, destBase, skill) => {
     });
     console.log(`  wrote  ${path_1.default.relative(process.cwd(), path_1.default.join(destBase, skill))}/`);
 };
-const copyCopilotDirectory = (srcGithub, cwd, directory) => {
-    const source = path_1.default.join(srcGithub, directory);
+const copyCopilotDirectory = (srcRoot, cwd, directory) => {
+    const source = path_1.default.join(srcRoot, directory);
     const destination = path_1.default.join(cwd, ".github", directory);
     fs_1.default.cpSync(source, destination, { recursive: true });
     console.log(`  wrote  ${path_1.default.relative(process.cwd(), destination)}/`);
@@ -370,22 +370,22 @@ const ttySelectMode = () => {
     });
 };
 // --- main ---
-const runInstall = (agents, selectedSkills, srcGithub, srcSkillsBase, cwd) => {
+const runInstall = (agents, selectedSkills, srcRoot, srcGithub, srcSkillsBase, cwd) => {
     console.log("");
     agents.forEach((agent) => {
         copyInstructions(instructionsSrc(agent, srcGithub), instructionsDest(agent, cwd));
         const dest = skillsDir(agent, cwd);
         selectedSkills.forEach((skill) => copySkill(srcSkillsBase, dest, skill));
         if (agent === "copilot") {
-            copyCopilotDirectory(srcGithub, cwd, "instructions");
-            copyCopilotDirectory(srcGithub, cwd, "prompts");
+            copyCopilotDirectory(srcRoot, cwd, "instructions");
+            copyCopilotDirectory(srcRoot, cwd, "prompts");
         }
     });
     copyInstructions(path_1.default.join(__dirname, "..", "AGENT.md"), path_1.default.join(cwd, "AGENT.md"));
     const totalItems = agents.length * (1 + selectedSkills.length) + 1;
     console.log(`\ndone - ${totalItems} item(s) installed for ${agents.join(", ")}`);
 };
-const runUpdate = (srcGithub, srcSkillsBase, cwd) => {
+const runUpdate = (srcRoot, srcGithub, srcSkillsBase, cwd) => {
     const agents = detectInstalledAgents(cwd);
     if (agents.length === 0) {
         console.log("  nothing found to update - run a fresh install first");
@@ -404,33 +404,34 @@ const runUpdate = (srcGithub, srcSkillsBase, cwd) => {
             }
         });
         if (agent === "copilot") {
-            copyCopilotDirectory(srcGithub, cwd, "instructions");
-            copyCopilotDirectory(srcGithub, cwd, "prompts");
+            copyCopilotDirectory(srcRoot, cwd, "instructions");
+            copyCopilotDirectory(srcRoot, cwd, "prompts");
         }
     });
     copyInstructions(path_1.default.join(__dirname, "..", "AGENT.md"), path_1.default.join(cwd, "AGENT.md"));
     console.log(`\ndone - updated ${agents.join(", ")}`);
 };
 const main = async () => {
-    const srcGithub = path_1.default.join(__dirname, "..", ".github");
-    const srcSkillsBase = path_1.default.join(__dirname, "..", ".agent", "skills");
+    const srcRoot = path_1.default.join(__dirname, "..");
+    const srcGithub = path_1.default.join(srcRoot, ".github");
+    const srcSkillsBase = path_1.default.join(srcRoot, "skills");
     const cwd = process.cwd();
     if (process.stdin.isTTY) {
         const mode = await ttySelectMode();
         if (mode === "update") {
-            runUpdate(srcGithub, srcSkillsBase, cwd);
+            runUpdate(srcRoot, srcGithub, srcSkillsBase, cwd);
             return;
         }
         const agents = await ttySelectAgents();
         const selectedSkills = await ttySelectSkills(listSkills(srcSkillsBase));
-        runInstall(agents, selectedSkills, srcGithub, srcSkillsBase, cwd);
+        runInstall(agents, selectedSkills, srcRoot, srcGithub, srcSkillsBase, cwd);
     }
     else {
         const prompter = createPrompter();
         const agents = await promptAgent(prompter);
         const selectedSkills = await promptSkills(prompter, listSkills(srcSkillsBase));
         prompter.close();
-        runInstall(agents, selectedSkills, srcGithub, srcSkillsBase, cwd);
+        runInstall(agents, selectedSkills, srcRoot, srcGithub, srcSkillsBase, cwd);
     }
 };
 main().catch((err) => {

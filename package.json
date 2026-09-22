@@ -8,10 +8,10 @@
   "files": [
     "bin/",
     "AGENT.md",
+    "skills/",
+    "prompts/",
+    "instructions/",
     ".github/copilot-instructions.md",
-    ".agent/",
-    ".github/prompts/",
-    ".github/instructions/",
     ".github/agent-instructions/"
   ],
   "engines": {
