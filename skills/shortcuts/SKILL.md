@@ -1,7 +1,7 @@
 ---
 name: shortcuts
-description: 'Use the C, CP, P, CB, G, GP, IMP, WN, PD, SLC, and YT chat shortcuts for Git and implementation work. C means commit current changes; CP means commit and push the current branch; P means push the current branch; CB means create a new git branch; G means generate requested content; GP means generate a plan file; IMP means implement a plan file; WN means identify what to implement next from the current plan; PD means generate a pull request description; SLC means summarize the latest changes; YT means YouTrack. Shortcuts are case-insensitive.'
-argument-hint: '<C|CP|P|CB|G|GP|IMP|WN|PD|SLC|YT>'
+description: 'Use the C, CP, P, CB, FF, G, GP, IMP, WN, PD, SLC, and YT chat shortcuts for Git and implementation work. C means commit current changes; CP means commit and push the current branch; P means push the current branch; CB means create a new git branch; FF means format files; G means generate requested content; GP means generate a plan file; IMP means implement a plan file; WN means identify what to implement next from the current plan; PD means generate a pull request description; SLC means summarize the latest changes; YT means YouTrack. Shortcuts are case-insensitive.'
+argument-hint: '<C|CP|P|CB|FF|G|GP|IMP|WN|PD|SLC|YT>'
 user-invocable: true
 ---
 
@@ -9,12 +9,13 @@ user-invocable: true
 
 ## When to Use
 
-Use this skill when the user sends `C`, `CP`, `P`, `CB`, `G`, `GP`, `IMP`, `WN`, `PD`, `SLC`, or `YT`, in any letter case, as a request to manage current Git work, generate content, or provide YouTrack context.
+Use this skill when the user sends `C`, `CP`, `P`, `CB`, `FF`, `G`, `GP`, `IMP`, `WN`, `PD`, `SLC`, or `YT`, in any letter case, as a request to manage current Git work, generate content, or provide YouTrack context.
 
 - `C`: inspect, validate, stage, and commit the intended current changes.
 - `CP`: perform the `C` workflow, then push the current branch to its upstream remote.
 - `P`: push the current branch to its upstream remote without committing or modifying files.
 - `CB {name}`: create a new git branch from the current `HEAD` without committing, pushing, or discarding any uncommitted changes.
+- `FF {paths}`: format the given files (or all files with uncommitted changes when no paths are given) per the project's formatting skills, without staging, committing, or pushing.
 - `G`: generate the requested content or artifact from the available context without committing or pushing.
 - `GP`: follow the [generate-plan prompt](../../../.github/prompts/generate-plan.prompt.md) to create or refine an incremental implementation plan file for the requested work.
 - `IMP`: implement the requested phase from a plan or implementation file, following that file's verification and commit instructions.
@@ -25,7 +26,7 @@ Use this skill when the user sends `C`, `CP`, `P`, `CB`, `G`, `GP`, `IMP`, `WN`,
 
 ## Procedure
 
-1. Normalize the request case-insensitively and accept `C`, `CP`, `P`, `CB`, `G`, `GP`, `IMP`, `WN`, `PD`, or `YT` with the argument forms documented above.
+1. Normalize the request case-insensitively and accept `C`, `CP`, `P`, `CB`, `FF`, `G`, `GP`, `IMP`, `WN`, `PD`, or `YT` with the argument forms documented above.
 2. Inspect the current branch and worktree with `git status --short --branch`.
 3. Review the staged and unstaged diff before selecting files. Preserve unrelated user changes and never use destructive commands to clean them up.
 4. Identify the narrowest appropriate validation command from the project. Run it before committing when the changed files have an available focused check. If validation fails, fix the relevant issue or report the blocker instead of committing a known failure.
@@ -43,11 +44,14 @@ Use this skill when the user sends `C`, `CP`, `P`, `CB`, `G`, `GP`, `IMP`, `WN`,
 12. For `CB`, derive a kebab-case branch name from the given argument. Keep a leading ticket ID (for example `IS-XXXXX`) uppercase and hyphen-separated from the rest of the description, e.g. `IS-1234-add-user-auth`. Ask the user for a short description when no argument is given.
 13. For `CB`, create the branch from the current `HEAD` with `git checkout -b <branch-name>`, preserving any uncommitted changes. Do not fetch, rebase onto, or switch to a base branch first unless explicitly requested.
 14. For `CB`, confirm the result with `git branch --show-current` and report the new branch name.
-15. For `G`, generate only the requested content or artifact and do not commit or push unless explicitly requested.
-16. For `GP`, follow the [generate-plan prompt](../../../.github/prompts/generate-plan.prompt.md) and create or refine the plan file under `.agents/plans/`.
-17. For `IMP`, follow the incremental implementation workflow for the specified plan or implementation file and run its verification step.
-18. For `WN`, inspect the current plan, identify the next incomplete implementation phase, and report it without modifying files.
-19. For `SLC`, run `git log origin/HEAD..HEAD --oneline` (or `git log --oneline -20` when no upstream exists) and `git diff origin/HEAD` to collect the changes, then produce a concise summary grouped by theme. Do not commit, push, or modify files.
+15. For `FF`, resolve the target files from the given paths, or from `git status --short` when no paths are given.
+16. For `FF`, apply the project's formatting conventions (the [formatting](../formatting/SKILL.md) skill, plus [react-formatting](../react-formatting/SKILL.md), [vue-formatting](../vue-formatting/SKILL.md), or [angular-formatting](../angular-formatting/SKILL.md) when relevant) to the target files. Use an installed formatter command from the project when one is defined; otherwise apply the documented rules directly.
+17. For `FF`, report the files that changed and do not stage, commit, or push them.
+18. For `G`, generate only the requested content or artifact and do not commit or push unless explicitly requested.
+19. For `GP`, follow the [generate-plan prompt](../../../.github/prompts/generate-plan.prompt.md) and create or refine the plan file under `.agents/plans/`.
+20. For `IMP`, follow the incremental implementation workflow for the specified plan or implementation file and run its verification step.
+21. For `WN`, inspect the current plan, identify the next incomplete implementation phase, and report it without modifying files.
+22. For `SLC`, run `git log origin/HEAD..HEAD --oneline` (or `git log --oneline -20` when no upstream exists) and `git diff origin/HEAD` to collect the changes, then produce a concise summary grouped by theme. Do not commit, push, or modify files.
 
 ### Pull Request Description (`PD`)
 
@@ -62,6 +66,7 @@ Follow [the PR description prompt](../../../.github/prompts/pr-description.promp
 - If the request is not a supported shortcut or documented argument form after case normalization, ask the user to choose one of the supported shortcuts.
 - For `P`, do not commit, stage, unstage, or modify files.
 - For `CB`, do not commit, stage, or push, and do not discard or stash existing uncommitted changes.
+- For `FF`, do not stage, commit, or push the formatted files unless explicitly requested.
 - For `G`, do not commit or push unless explicitly requested.
 - For `WN`, do not modify files.
 - Never run `git reset --hard`, `git checkout --`, force-push, rebase, or other destructive history operations as part of a shortcut.
