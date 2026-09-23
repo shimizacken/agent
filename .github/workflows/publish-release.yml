@@ -1,0 +1,76 @@
+name: Publish Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - package.json
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for a new version
+        id: check
+        run: |
+          VERSION="v$(node -p "require('./package.json').version")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "is_new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_new=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate release notes
+        id: notes
+        if: steps.check.outputs.is_new == 'true'
+        run: |
+          PREV_TAG=$(git tag --sort=-v:refname --list 'v*.*.*' | head -n1 || true)
+          if [ -z "$PREV_TAG" ]; then
+            RANGE="HEAD"
+          else
+            RANGE="$PREV_TAG..HEAD"
+          fi
+
+          NOTES_FILE=$(mktemp)
+          declare -A LABELS=(
+            [feat]="Features" [fix]="Fixes" [refactor]="Refactors" [test]="Tests"
+            [chore]="Chores" [docs]="Docs" [style]="Style" [perf]="Performance"
+            [ci]="CI" [revert]="Reverts"
+          )
+
+          for type in feat fix refactor test chore docs style perf ci revert; do
+            matches=$(git log "$RANGE" --pretty=format:'%s' | grep -E "^${type}(\(.*\))?!?:" || true)
+            if [ -n "$matches" ]; then
+              echo "## ${LABELS[$type]}" >> "$NOTES_FILE"
+              echo "$matches" | sed 's/^/- /' >> "$NOTES_FILE"
+              echo "" >> "$NOTES_FILE"
+            fi
+          done
+
+          other=$(git log "$RANGE" --pretty=format:'%s' | grep -vE "^(feat|fix|refactor|test|chore|docs|style|perf|ci|revert)(\(.*\))?!?:" || true)
+          if [ -n "$other" ]; then
+            echo "## Other" >> "$NOTES_FILE"
+            echo "$other" | sed 's/^/- /' >> "$NOTES_FILE"
+          fi
+
+          echo "notes_file=$NOTES_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Tag and publish release
+        if: steps.check.outputs.is_new == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.check.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "$VERSION"
+          git push origin "$VERSION"
+          gh release create "$VERSION" --title "$VERSION" --notes-file "${{ steps.notes.outputs.notes_file }}"

@@ -1,6 +1,6 @@
 ---
 name: pr-description
-description: Generate or update a consistent GitHub pull request description from the current branch changes. Use for PR descriptions, pull request summaries, or the PD shortcut.
+description: Generate or update a consistent GitHub pull request description from the current branch changes. Use for PR descriptions, pull request summaries, or the PRD shortcut.
 argument-hint: '[YTC|YTP] {YouTrack link}'
 user-invocable: true
 ---
