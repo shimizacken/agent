@@ -1,7 +1,7 @@
 ---
 name: shortcuts
-description: 'Use the C, CP, P, CB, FF, G, GP, IMP, WN, PD, SLC, and YT chat shortcuts for Git and implementation work. C means commit current changes; CP means commit and push the current branch; P means push the current branch; CB means create a new git branch; FF means format files; G means generate requested content; GP means generate a plan file; IMP means implement a plan file; WN means identify what to implement next from the current plan; PD means generate a pull request description; SLC means summarize the latest changes; YT means YouTrack. Shortcuts are case-insensitive.'
-argument-hint: '<C|CP|P|CB|FF|G|GP|IMP|WN|PD|SLC|YT>'
+description: 'Use the C, CP, P, CB, FF, G, GP, IMP, WN, PRD, CPR, SLC, and YT chat shortcuts for Git and implementation work. C means commit current changes; CP means commit and push the current branch; P means push the current branch; CB means create a new git branch; FF means format files; G means generate requested content; GP means generate a plan file; IMP means implement a plan file; WN means identify what to implement next from the current plan; PRD means generate a pull request description; CPR means create or update a pull request via the gh CLI; SLC means summarize the latest changes; YT means YouTrack. Shortcuts are case-insensitive.'
+argument-hint: '<C|CP|P|CB|FF|G|GP|IMP|WN|PRD|CPR|SLC|YT>'
 user-invocable: true
 ---
 
@@ -9,7 +9,7 @@ user-invocable: true
 
 ## When to Use
 
-Use this skill when the user sends `C`, `CP`, `P`, `CB`, `FF`, `G`, `GP`, `IMP`, `WN`, `PD`, `SLC`, or `YT`, in any letter case, as a request to manage current Git work, generate content, or provide YouTrack context.
+Use this skill when the user sends `C`, `CP`, `P`, `CB`, `FF`, `G`, `GP`, `IMP`, `WN`, `PRD`, `CPR`, `SLC`, or `YT`, in any letter case, as a request to manage current Git work, generate content, or provide YouTrack context.
 
 - `C`: inspect, validate, stage, and commit the intended current changes.
 - `CP`: perform the `C` workflow, then push the current branch to its upstream remote.
@@ -20,13 +20,14 @@ Use this skill when the user sends `C`, `CP`, `P`, `CB`, `FF`, `G`, `GP`, `IMP`,
 - `GP`: follow the [generate-plan prompt](../../../.github/prompts/generate-plan.prompt.md) to create or refine an incremental implementation plan file for the requested work.
 - `IMP`: implement the requested phase from a plan or implementation file, following that file's verification and commit instructions.
 - `WN`: inspect the current plan and report what should be implemented next without modifying files.
-- `PD`: follow [the PR description prompt](../../../.github/prompts/pr-description.prompt.md) to generate a consistent description without modifying the worktree.
+- `PRD`: follow [the PR description prompt](../../../.github/prompts/pr-description.prompt.md) to generate a consistent description without modifying the worktree.
+- `CPR [base branch or title]`: follow [the publish-pr prompt](../../../.github/prompts/publish-pr.prompt.md) to create or update a GitHub pull request for the current branch via the `gh` CLI.
 - `SLC`: summarize the latest changes on the current branch relative to its upstream or base branch. Use `git log` and `git diff` to produce a concise human-readable summary grouped by theme. Do not commit or push.
-- `YT`: YouTrack context. Use `YTC {link}` with `PD` to mark the PR as closing the YouTrack issue, or `YTP {link}` with `PD` to mark it as part of the YouTrack issue.
+- `YT`: YouTrack context. Use `YTC {link}` with `PRD` to mark the PR as closing the YouTrack issue, or `YTP {link}` with `PRD` to mark it as part of the YouTrack issue.
 
 ## Procedure
 
-1. Normalize the request case-insensitively and accept `C`, `CP`, `P`, `CB`, `FF`, `G`, `GP`, `IMP`, `WN`, `PD`, or `YT` with the argument forms documented above.
+1. Normalize the request case-insensitively and accept `C`, `CP`, `P`, `CB`, `FF`, `G`, `GP`, `IMP`, `WN`, `PRD`, `CPR`, or `YT` with the argument forms documented above.
 2. Inspect the current branch and worktree with `git status --short --branch`.
 3. Review the staged and unstaged diff before selecting files. Preserve unrelated user changes and never use destructive commands to clean them up.
 4. Identify the narrowest appropriate validation command from the project. Run it before committing when the changed files have an available focused check. If validation fails, fix the relevant issue or report the blocker instead of committing a known failure.
@@ -51,9 +52,10 @@ Use this skill when the user sends `C`, `CP`, `P`, `CB`, `FF`, `G`, `GP`, `IMP`,
 19. For `GP`, follow the [generate-plan prompt](../../../.github/prompts/generate-plan.prompt.md) and create or refine the plan file under `.agents/plans/`.
 20. For `IMP`, follow the incremental implementation workflow for the specified plan or implementation file and run its verification step.
 21. For `WN`, inspect the current plan, identify the next incomplete implementation phase, and report it without modifying files.
-22. For `SLC`, run `git log origin/HEAD..HEAD --oneline` (or `git log --oneline -20` when no upstream exists) and `git diff origin/HEAD` to collect the changes, then produce a concise summary grouped by theme. Do not commit, push, or modify files.
+22. For `CPR`, follow [the publish-pr prompt](../../../.github/prompts/publish-pr.prompt.md) exactly, including its `gh` authentication check, base branch detection, and confirmation-before-creating step. Pass an argument through as the base branch or PR title per the prompt's `argument-hint`.
+23. For `SLC`, run `git log origin/HEAD..HEAD --oneline` (or `git log --oneline -20` when no upstream exists) and `git diff origin/HEAD` to collect the changes, then produce a concise summary grouped by theme. Do not commit, push, or modify files.
 
-### Pull Request Description (`PD`)
+### Pull Request Description (`PRD`)
 
 Follow [the PR description prompt](../../../.github/prompts/pr-description.prompt.md) for the branch inspection process, fixed output sections, and content rules. Pass `YTC {link}` when the PR closes a YouTrack issue or `YTP {link}` when it addresses only part of one. Return its Markdown output without creating a commit, pushing changes, or editing files.
 
@@ -67,6 +69,7 @@ Follow [the PR description prompt](../../../.github/prompts/pr-description.promp
 - For `P`, do not commit, stage, unstage, or modify files.
 - For `CB`, do not commit, stage, or push, and do not discard or stash existing uncommitted changes.
 - For `FF`, do not stage, commit, or push the formatted files unless explicitly requested.
+- For `CPR`, do not commit, push, force-push, merge, close, or delete a pull request; only create or update it via `gh pr create`/`gh pr edit` per the publish-pr prompt.
 - For `G`, do not commit or push unless explicitly requested.
 - For `WN`, do not modify files.
 - Never run `git reset --hard`, `git checkout --`, force-push, rebase, or other destructive history operations as part of a shortcut.
